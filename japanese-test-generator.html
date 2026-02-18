@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日本語テスト — Japanese Vocabulary Test Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --paper: #f5f0e8;
+    --cream: #ede7d5;
+    --red: #c0392b;
+    --red-pale: #fdf0ef;
+    --gold: #b8860b;
+    --border: #c8b89a;
+    --shadow: rgba(26,18,8,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Libre Baskerville', Georgia, serif;
+    background: #2d2416;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(88deg, transparent, transparent 120px, rgba(255,255,255,0.015) 121px, rgba(255,255,255,0.015) 122px),
+      repeating-linear-gradient(92deg, transparent, transparent 80px, rgba(0,0,0,0.04) 81px);
+    pointer-events: none;
+  }
+
+  .app-title { text-align: center; margin-bottom: 20px; }
+  .app-title h1 { font-family: 'Noto Serif JP', serif; font-size: 2rem; color: #f5f0e8; letter-spacing: 0.05em; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+  .app-title .subtitle { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: #c8b89a; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 6px; }
+
+  /* ---- MODE SWITCHER ---- */
+  .mode-switcher {
+    display: flex;
+    gap: 0;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    padding: 4px;
+    margin-bottom: 24px;
+  }
+  .mode-btn {
+    padding: 10px 28px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: transparent;
+    color: #c8b89a;
+    transition: all 0.2s;
+  }
+  .mode-btn:hover { color: white; }
+  .mode-btn.mode-active { background: var(--paper); color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .mode-btn.mode-active.student-mode { background: #1a3a5c; color: #7ec8e3; }
+  .mode-btn#editorBtn { color: #d4a017; }
+  .mode-btn#editorBtn.mode-active { background: #fff8ee; color: #b8860b; }
+
+  /* ---- CARD ---- */
+  .card {
+    background: var(--paper);
+    border-radius: 3px;
+    box-shadow: 0 4px 24px var(--shadow), 0 1px 0 rgba(255,255,255,0.3) inset;
+    width: 100%;
+    max-width: 820px;
+    border: 1px solid var(--border);
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 28px 14px;
+    border-bottom: 1px solid var(--cream);
+    background: var(--cream);
+    border-radius: 3px 3px 0 0;
+  }
+  .card-header h2 { font-size: 0.95rem; font-weight: 700; color: var(--ink); letter-spacing: 0.02em; }
+  .step-badge {
+    width: 24px; height: 24px;
+    background: var(--red); color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .card-body { padding: 20px 28px 24px; }
+  .setup-card { margin-bottom: 20px; }
+
+  /* ---- SECTION CHIPS ---- */
+  .section-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+  .section-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .section-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    background: white;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .section-chip:hover { border-color: var(--gold); }
+  .section-chip.active { border-color: var(--red); background: var(--red-pale); }
+  .check-dot {
+    width: 8px; height: 8px;
+    border: 1.5px solid #bbb;
+    border-radius: 2px;
+    flex-shrink: 0;
+    transition: all 0.12s;
+  }
+  .section-chip.active .check-dot { background: var(--red); border-color: var(--red); }
+  .chip-count { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: #aaa; }
+
+  /* ---- REVIEW PANEL ---- */
+  .review-panel {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 16px;
+  }
+  .review-panel h3 { font-size: 0.8rem; color: #777; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.1em; font-family: 'Space Mono', monospace; }
+  .review-section-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .review-chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 0.72rem;
+    background: white;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .review-chip:hover { border-color: var(--gold); }
+  .review-chip.active { border-color: var(--red); background: var(--red-pale); }
+  .rc-dot { width: 7px; height: 7px; border: 1.5px solid #bbb; border-radius: 50%; flex-shrink: 0; transition: all 0.12s; }
+  .review-chip.active .rc-dot { background: var(--red); border-color: var(--red); }
+
+  /* ---- COUNT ROW ---- */
+  .count-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .count-label { font-size: 0.82rem; color: #555; min-width: 220px; }
+  .count-input {
+    width: 80px; padding: 7px 10px;
+    border: 1.5px solid var(--border); border-radius: 3px;
+    font-family: 'Space Mono', monospace; font-size: 0.9rem;
+    color: var(--ink); background: white; text-align: center;
+  }
+  .count-input:focus { outline: none; border-color: var(--red); }
+
+  /* ---- BUTTONS ---- */
+  .btn {
+    padding: 9px 20px; border: none; border-radius: 3px; cursor: pointer;
+    font-family: 'Space Mono', monospace; font-size: 0.75rem;
+    letter-spacing: 0.08em; text-transform: uppercase; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--red); color: white; box-shadow: 0 2px 6px rgba(192,57,43,0.3); }
+  .btn-primary:hover { background: #a93226; box-shadow: 0 3px 10px rgba(192,57,43,0.4); }
+  .btn-primary:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+  .btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-ghost { background: transparent; color: #888; border: 1px solid #ddd; font-size: 0.7rem; }
+  .btn-ghost:hover { color: var(--red); border-color: var(--red); }
+  .btn-blue { background: #1a5276; color: #aed6f1; border: none; }
+  .btn-blue:hover { background: #1a3a5c; }
+
+  .generate-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 20px; border-top: 1.5px solid var(--cream); }
+  .status-text { font-size: 0.78rem; color: #888; font-style: italic; }
+  .status-text.warn { color: var(--red); }
+
+  /* ---- LAYOUT OPTION CHIPS ---- */
+  .layout-opt {
+    display: flex; align-items: center; gap: 7px;
+    padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 3px;
+    cursor: pointer; font-size: 0.8rem; background: white;
+    transition: all 0.15s; user-select: none;
+  }
+  .layout-opt:hover { border-color: var(--gold); }
+  .layout-opt.active { border-color: var(--red); background: var(--red-pale); color: var(--red); }
+
+  /* ---- PREVIEW / PRINT ---- */
+  #previewSection { display: none; }
+  #previewSection.visible { display: block; }
+
+  .test-sheet { background: white; border: 1px solid var(--border); border-radius: 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+  .preview-scroll { max-height: 600px; overflow-y: auto; border-top: 1px solid var(--border); }
+  .preview-controls {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 16px 28px; border-top: 2px solid var(--border);
+    background: var(--cream); border-radius: 0 0 3px 3px;
+  }
+  .preview-title { font-family: 'Space Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; color: #888; text-transform: uppercase; margin-right: auto; }
+
+  @media print {
+    body { background: white; padding: 0; }
+    body::before { display: none; }
+    .app-title, .setup-card, .preview-controls, .mode-switcher { display: none; }
+    .card { box-shadow: none; border: none; max-width: 100%; }
+    #previewSection { display: block !important; }
+    .test-sheet { box-shadow: none; border: none; }
+    .preview-scroll { max-height: none; overflow: visible; border: none; }
+    #answerKeySheet { background: white; }
+  }
+
+  /* ---- TEST SHEET ---- */
+  .sheet-head { padding: 8px 16px 8px; border-bottom: 3px double #333; }
+  .sheet-head.answer-key-mode { border-bottom-color: var(--red); }
+  .answer-key-banner {
+    background: var(--red); color: white;
+    font-family: 'Space Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.2em; text-align: center; padding: 4px;
+    margin: -12px -20px 10px; text-transform: uppercase;
+  }
+  .sheet-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .sheet-title { font-family: 'Noto Serif JP', serif; font-size: 0.92rem; color: #111; }
+  .sheet-title-en { font-size: 0.68rem; color: #666; font-style: italic; font-family: 'Libre Baskerville', serif; margin-top: 2px; }
+  .sheet-meta { text-align: right; font-size: 0.65rem; color: #555; font-family: 'Space Mono', monospace; }
+  .meta-line { margin-bottom: 4px; }
+  .meta-blank { display: inline-block; border-bottom: 1px solid #555; width: 110px; vertical-align: bottom; }
+  .sheet-info-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.65rem; color: #555; font-family: 'Space Mono', monospace; }
+  .info-tag { color: var(--gold); }
+  .sheet-body { padding: 8px 16px 12px; }
+
+  .section-divider {
+    font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #888;
+    margin: 7px 0 4px; display: flex; align-items: center; gap: 10px;
+  }
+  .section-divider::after { content: ''; flex: 1; height: 1px; background: #ddd; }
+  .section-divider:first-child { margin-top: 0; }
+
+  .question-row {
+    display: grid; grid-template-columns: 24px 1fr 130px;
+    gap: 6px 8px; align-items: baseline;
+    margin-bottom: 5px; font-size: 0.78rem; line-height: 1.25;
+  }
+  .q-num { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--red); text-align: right; padding-top: 2px; }
+  .q-prompt { color: #111; }
+  .q-prompt .jp-word { font-family: 'Noto Serif JP', serif; font-size: 0.9rem; }
+  .q-answer-line { border-bottom: 1px solid #bbb; min-height: 8px; align-self: end; margin-bottom: 1px; }
+  .q-answer-shown { font-family: 'Space Mono', monospace; font-size: 0.78rem; color: var(--red); font-style: italic; }
+
+  /* ---- SCORE BOX ---- */
+  .score-box { float: right; border: 2px solid #333; padding: 6px 12px; text-align: center; font-family: 'Space Mono', monospace; font-size: 0.68rem; margin-bottom: 12px; margin-left: 12px; min-width: 80px; }
+  .score-box .score-label { color: #888; margin-bottom: 4px; }
+  .score-box .score-blank { font-size: 1.4rem; border-bottom: 2px solid #333; margin-bottom: 2px; padding: 0 6px; }
+
+  /* 2-up print */
+  .test-wrapper { display: flex; }
+  .test-copy { width: 50%; flex-shrink: 0; box-sizing: border-box; }
+  .test-copy:first-child { border-right: 1.5px dashed #ccc; padding-right: 10px; }
+  .test-copy:last-child { padding-left: 10px; }
+  .print-double .sheet-head { padding: 8px 14px 6px; }
+  .print-double .sheet-body { padding: 8px 14px 10px; }
+  .print-double .sheet-title { font-size: 0.9rem; }
+  .print-double .question-row { font-size: 0.8rem; margin-bottom: 5px; }
+  .print-double .section-divider { font-size: 0.6rem; margin: 6px 0 3px; }
+
+  /* ---- STUDENT MODE ---- */
+  .student-card { background: #0d2137; border: 1px solid #1a4a6e; color: #c8e6f5; }
+  .student-card .card-header { background: #112740; border-color: #1a4a6e; }
+  .student-card .card-header h2 { color: #7ec8e3; }
+  .student-card .step-badge { background: #1a5276; }
+  .student-card .divider { background: #1a4a6e; }
+  .student-card .section-chip { background: #0a1e30; border-color: #1a4a6e; color: #aed6f1; }
+  .student-card .section-chip:hover { border-color: #7ec8e3; }
+  .student-card .section-chip.active { border-color: #7ec8e3; background: #1a3a5c; }
+  .student-card .section-chip.active .check-dot { background: #7ec8e3; border-color: #7ec8e3; }
+  .student-card .check-dot { border-color: #2a5a7e; }
+  .student-card .btn-ghost { color: #7ec8e3; border-color: #1a4a6e; }
+  .student-card .btn-ghost:hover { color: white; border-color: #7ec8e3; }
+  .student-card .status-text { color: #7ec8e3; }
+
+  /* Study mode tabs */
+  .study-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .study-tab {
+    padding: 8px 16px; border: 1.5px solid #1a4a6e; border-radius: 3px;
+    cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    background: #0a1e30; color: #7ec8e3; transition: all 0.15s;
+  }
+  .study-tab:hover { border-color: #7ec8e3; }
+  .study-tab.active { background: #1a5276; border-color: #7ec8e3; color: white; }
+
+  /* Flashcard */
+  .flashcard {
+    width: 100%; max-width: 500px; margin: 0 auto 20px;
+    perspective: 1000px; cursor: pointer; height: 200px;
+  }
+  .flashcard-inner {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d; transition: transform 0.5s ease;
+  }
+  .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+  .flashcard-front, .flashcard-back {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    background: white; border-radius: 8px;
+    border: 2px solid #1a4a6e;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; text-align: center;
+  }
+  .flashcard-back { transform: rotateY(180deg); background: #0a1e30; border-color: #7ec8e3; }
+  .fc-lang { font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+  .flashcard-back .fc-lang { color: #7ec8e3; }
+  .fc-jp { font-family: 'Noto Serif JP', serif; font-size: 2.2rem; color: #111; margin-bottom: 4px; }
+  .fc-reading { font-size: 0.85rem; color: #888; margin-bottom: 8px; }
+  .fc-hint { font-size: 0.72rem; color: #bbb; font-style: italic; }
+  .fc-en { font-size: 1.5rem; color: #7ec8e3; font-weight: bold; margin-bottom: 8px; }
+  .fc-jp-small { font-family: 'Noto Serif JP', serif; font-size: 1rem; color: #aed6f1; margin-bottom: 8px; }
+  .fc-controls { display: flex; align-items: center; justify-content: center; gap: 20px; }
+
+  /* Typing practice */
+  .typing-prompt {
+    background: #0a1e30; border: 2px solid #1a4a6e; border-radius: 6px;
+    padding: 20px; text-align: center; margin-bottom: 12px; min-height: 80px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .typing-input {
+    width: 100%; padding: 10px 14px;
+    border: 2px solid #1a4a6e; border-radius: 4px;
+    font-size: 1rem; font-family: 'Libre Baskerville', serif;
+    background: #0a1e30; color: #c8e6f5;
+  }
+  .typing-input:focus { outline: none; border-color: #7ec8e3; }
+
+  /* Self-mark */
+  .sm-section {
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: #5a9ab8; padding: 6px 0;
+    border-bottom: 1px solid #1a4a6e; margin-bottom: 8px;
+  }
+  .sm-row { display: grid; grid-template-columns: 24px 1fr 160px; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 0.88rem; }
+  .sm-num { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: #7ec8e3; text-align: right; }
+  .sm-prompt { color: #c8e6f5; }
+  .sm-prompt .jp-word { font-family: 'Noto Serif JP', serif; font-size: 1rem; }
+  .sm-answer {
+    font-family: 'Space Mono', monospace; font-size: 0.78rem;
+    color: #2a5a7e; background: #0a1e30; padding: 3px 8px;
+    border-radius: 3px; cursor: pointer; border: 1px solid #1a4a6e;
+    transition: all 0.2s; text-align: center;
+  }
+  .sm-answer:hover { border-color: #7ec8e3; }
+  .sm-answer.revealed { color: #7ec8e3; cursor: default; }
+  .sm-answer.revealed .jp-word { font-family: 'Noto Serif JP', serif; font-size: 0.95rem; }
+
+  /* Browse */
+  .browse-section-header {
+    font-family: 'Space Mono', monospace; font-size: 0.68rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: #7ec8e3;
+    padding: 8px 0 4px; border-bottom: 1px solid #1a4a6e; margin-bottom: 6px; margin-top: 16px;
+  }
+  .browse-section-header:first-child { margin-top: 0; }
+  .browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px; }
+  .browse-row {
+    display: flex; gap: 12px; align-items: baseline;
+    padding: 4px 8px; border-radius: 3px; background: rgba(255,255,255,0.03);
+  }
+  .browse-row:hover { background: rgba(126,200,227,0.08); }
+  .browse-jp .jp-word { font-family: 'Noto Serif JP', serif; font-size: 1rem; color: #c8e6f5; }
+  .browse-reading { font-size: 0.72rem; color: #5a9ab8; }
+  .browse-en { font-size: 0.82rem; color: #7ec8e3; flex-shrink: 0; }
+
+  /* ---- HELPERS ---- */
+  .mt-1 { margin-top: 8px; }
+  .mt-2 { margin-top: 16px; }
+  .divider { height: 1px; background: var(--cream); margin: 20px 0; }
+  .clearfix::after { content: ''; display: table; clear: both; }
+
+  @media print {
+    @page { margin: 12mm 14mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-title">
+  <h1>日本語テスト生成器</h1>
+  <div class="subtitle">HSC Japanese Beginners · Vocabulary Test Generator</div>
+</div>
+
+<!-- MODE SWITCHER -->
+<div class="mode-switcher">
+  <button class="mode-btn mode-active" id="teacherBtn" onclick="switchMode('teacher')">👩‍🏫 Teacher Mode</button>
+  <button class="mode-btn" id="editorBtn" onclick="switchMode('editor')">✏️ Edit Vocabulary</button>
+  <button class="mode-btn student-mode" id="studentBtn" onclick="switchMode('student')">📖 Student Study Mode</button>
+</div>
+
+<!-- ================================================================ -->
+<!-- TEACHER PANEL -->
+<!-- ================================================================ -->
+<div id="teacherPanel">
+
+<div class="card setup-card">
+
+  <!-- STEP 1 -->
+  <div class="card-header">
+    <div class="step-badge">1</div>
+    <h2>This Week's New Vocabulary Lists</h2>
+  </div>
+  <div class="card-body">
+    <p style="font-size:0.82rem;color:#666;margin-bottom:16px;font-style:italic;">Select the list(s) you taught this week — these will form the core of the test.</p>
+    <div class="section-controls">
+      <button class="btn btn-ghost" onclick="selectAll()">Select All</button>
+      <button class="btn btn-ghost" onclick="clearAll()">Clear All</button>
+    </div>
+    <div class="section-grid" id="sectionGrid"></div>
+    <div class="status-text" id="weekStatus">No lists selected</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- STEP 2 -->
+  <div class="card-header">
+    <div class="step-badge">2</div>
+    <h2>Spiral Review — Previously Taught Lists</h2>
+  </div>
+  <div class="card-body">
+    <p style="font-size:0.82rem;color:#666;margin-bottom:16px;font-style:italic;">Optionally add older lists to include review words in the test.</p>
+    <div class="review-panel">
+      <h3>Previously Taught Lists</h3>
+      <div class="review-section-grid" id="reviewGrid">
+        <div style="font-size:0.8rem;color:#aaa;font-style:italic;">Select this week's lists first to see review options.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- STEP 3 -->
+  <div class="card-header">
+    <div class="step-badge">3</div>
+    <h2>Test Configuration</h2>
+  </div>
+  <div class="card-body">
+    <p style="font-size:0.82rem;color:#666;margin-bottom:16px;font-style:italic;">
+      20 questions: Q1–10 Japanese → English, Q11–20 English → Japanese. All write-in.
+    </p>
+
+    <div class="count-row">
+      <span class="count-label">Review words (from old lists):</span>
+      <input type="number" class="count-input" id="reviewCount" value="5" min="0" max="20">
+      <span style="font-size:0.78rem;color:#888;">of 20 total</span>
+    </div>
+    <p style="font-size:0.75rem;color:#888;margin-top:4px;margin-bottom:16px;font-style:italic;">The remaining questions will come from this week's lists.</p>
+
+    <div style="margin-bottom:16px;">
+      <label style="font-size:0.82rem;display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="shuffleCheck" checked style="accent-color:var(--red);">
+        Shuffle question order within each section
+      </label>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="font-size:0.82rem;display:block;margin-bottom:6px;">Test date (appears on printout):</label>
+      <input type="date" id="testDate" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:3px;font-family:'Space Mono',monospace;font-size:0.82rem;color:var(--ink);">
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <label style="font-size:0.78rem;display:block;margin-bottom:8px;font-weight:bold;color:var(--gold);font-family:'Space Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;">🖨 Print Layout</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <label class="layout-opt active" id="optPortrait" onclick="setLayout('portrait')">
+          <input type="radio" name="printLayout" value="portrait" checked style="accent-color:var(--red);"> <span>📄 Portrait · 1 copy</span>
+        </label>
+        <label class="layout-opt" id="optLandscape" onclick="setLayout('landscape')">
+          <input type="radio" name="printLayout" value="landscape" style="accent-color:var(--red);"> <span>📰 Landscape · 1 copy</span>
+        </label>
+        <label class="layout-opt" id="optDouble" onclick="setLayout('double')">
+          <input type="radio" name="printLayout" value="double" style="accent-color:var(--red);"> <span>✂ Landscape · 2 copies (cut in half)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="generate-row">
+      <button class="btn btn-primary" id="generateBtn" onclick="generateTest()" disabled>Generate Test</button>
+      <div class="status-text" id="generateStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW CARD -->
+<div class="card" id="previewSection">
+  <div class="preview-scroll">
+    <div class="test-sheet" id="testSheet"></div>
+  </div>
+  <div class="preview-controls">
+    <span class="preview-title">Test Preview</span>
+    <button class="btn btn-outline" onclick="generateTest()">🔀 Regenerate</button>
+    <button class="btn btn-outline btn-blue" onclick="printAnswerKey()">🗝 Answer Key Only</button>
+    <button class="btn btn-outline btn-blue" onclick="printTestWithKey()">📋 Test + Answer Key</button>
+    <button class="btn btn-primary" onclick="printTest()">🖨 Print Test</button>
+  </div>
+</div>
+
+<!-- Hidden answer key sheet (shown only when printing answer key) -->
+<div id="answerKeySheet" style="display:none;" class="test-sheet"></div>
+
+</div><!-- /teacherPanel -->
+
+<!-- ================================================================ -->
+<!-- STUDENT PANEL -->
+<!-- ================================================================ -->
+<div id="studentPanel" style="display:none;">
+
+<div class="card student-card setup-card">
+  <div class="card-header">
+    <div class="step-badge">★</div>
+    <h2>Select Lists to Study</h2>
+  </div>
+  <div class="card-body">
+    <p style="font-size:0.82rem;color:#5a9ab8;margin-bottom:16px;font-style:italic;">Choose which vocabulary lists to practise. Leave all unselected to study everything.</p>
+    <div class="section-controls">
+      <button class="btn btn-ghost" onclick="studentSelectAll()">Select All</button>
+      <button class="btn btn-ghost" onclick="studentClearAll()">Clear All</button>
+    </div>
+    <div class="section-grid" id="studentSectionGrid"></div>
+    <div class="status-text" id="studentStatus">Showing all 1,138 words</div>
+  </div>
+</div>
+
+<div class="card student-card" style="margin-top:16px;">
+  <div class="card-header">
+    <div class="step-badge">★</div>
+    <h2>Study Mode</h2>
+  </div>
+  <div class="card-body">
+    <div class="study-tabs">
+      <button class="study-tab active" id="studyBtn_flashcard" onclick="showStudyMode('flashcard')">🃏 Flashcards</button>
+      <button class="study-tab" id="studyBtn_selfmark" onclick="showStudyMode('selfmark')">✍ Self-Mark Quiz</button>
+      <button class="study-tab" id="studyBtn_browse" onclick="showStudyMode('browse')">📚 Browse All</button>
+    </div>
+
+    <!-- Flashcard panel -->
+    <div id="study_flashcard">
+      <div id="flashcard_area"></div>
+    </div>
+
+    <!-- Self-mark quiz panel -->
+    <div id="study_selfmark" style="display:none;">
+      <div id="selfmark_area"></div>
+    </div>
+
+    <!-- Browse panel -->
+    <div id="study_browse" style="display:none;">
+      <div id="browse_area"></div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /studentPanel -->
+
+<script>
+
+// ============================================================
+//  VOCAB DATA
+// ============================================================
+const VOCAB_DATA = [{"section": "Personal Info", "words": [{"japanese": "あいさつ", "reading": "あいさつ", "english": "greeting"}, {"japanese": "おはよう", "reading": "おはよう", "english": "good morning"}, {"japanese": "こんにちは", "reading": "こんにちは", "english": "hello"}, {"japanese": "さようなら", "reading": "さようなら", "english": "goodbye"}, {"japanese": "じぶん", "reading": "じぶん", "english": "self"}, {"japanese": "しょうかい", "reading": "しょうかい", "english": "introduce"}, {"japanese": "だいじょうぶ", "reading": "だいじょうぶ", "english": "ok, allright"}, {"japanese": "だれ", "reading": "だれ", "english": "who"}, {"japanese": "たん生日", "reading": "たんじょうび", "english": "birthday"}, {"japanese": "とても", "reading": "とても", "english": "very"}, {"japanese": "はい", "reading": "はい", "english": "yes"}, {"japanese": "はじめて", "reading": "はじめて", "english": "first time"}, {"japanese": "はじめまして", "reading": "はじめまして", "english": "how do you do (first time)"}, {"japanese": "はじめる", "reading": "はじめる", "english": "to begin to"}, {"japanese": "ブログ", "reading": "ブログ", "english": "blog"}, {"japanese": "ぼく", "reading": "ぼく", "english": "I (male)"}, {"japanese": "みなさん", "reading": "みなさん", "english": "everyone"}, {"japanese": "メッセージ", "reading": "メッセージ", "english": "message"}, {"japanese": "も っ と", "reading": "も っ と", "english": "a lot"}, {"japanese": "もしもし", "reading": "もしもし", "english": "hello (phone)"}, {"japanese": "やった", "reading": "やった", "english": "hooray!!, YES!!!"}, {"japanese": "ロマンチック", "reading": "ロマンチック", "english": "romantic"}, {"japanese": "わらう", "reading": "わらう", "english": "laugh"}, {"japanese": "人", "reading": "ひと", "english": "person"}, {"japanese": "元気", "reading": "げんき", "english": "good spirit"}, {"japanese": "名前", "reading": "なまえ", "english": "name"}, {"japanese": "私", "reading": "わたし", "english": "I (girls,boys)"}, {"japanese": "電話", "reading": "でんわ", "english": "phone"}, {"japanese": "電話ばんごう", "reading": "でんわばんごう", "english": "phone number"}, {"japanese": "こんばんは", "reading": "こんばんは", "english": "good evening"}, {"japanese": "しつれいする", "reading": "しつれいする", "english": "excuse me"}, {"japanese": "ありがとう・ございます", "reading": "ありがとう・ございます", "english": "thank you very much"}, {"japanese": "行ってきます", "reading": "いってきます", "english": "I will go and come"}, {"japanese": "行ってらっしゃい", "reading": "行ってらっしゃい", "english": "Please go and come"}, {"japanese": "おかえりなさい", "reading": "おかえりなさい", "english": "Welcome home"}]}, {"section": "Descriptive Word", "words": [{"japanese": "あお", "reading": "あお", "english": "blue"}, {"japanese": "あか", "reading": "あか", "english": "red"}, {"japanese": "あじ", "reading": "あじ", "english": "taste"}, {"japanese": "あたらしい", "reading": "あたらしい", "english": "new"}, {"japanese": "あぶない", "reading": "あぶない", "english": "dangerous"}, {"japanese": "あまい", "reading": "あまい", "english": "sweet"}, {"japanese": "あんぜん", "reading": "あんぜん", "english": "safe"}, {"japanese": "いい", "reading": "いい", "english": "good"}, {"japanese": "いそがしい", "reading": "いそがしい", "english": "busy"}, {"japanese": "いや", "reading": "いや", "english": "horrible"}, {"japanese": "うつくしい", "reading": "うつくしい", "english": "beautiful"}, {"japanese": "うらやましい", "reading": "うらやましい", "english": "jealous"}, {"japanese": "うるさい", "reading": "うるさい", "english": "noisy"}, {"japanese": "うれしい", "reading": "うれしい", "english": "happy"}, {"japanese": "おいしい", "reading": "おいしい", "english": "delicious"}, {"japanese": "おおい", "reading": "おおい", "english": "many"}, {"japanese": "おかしい", "reading": "おかしい", "english": "funny, strange"}, {"japanese": "おそい", "reading": "おそい", "english": "slow"}, {"japanese": "おもしろい", "reading": "おもしろい", "english": "interesting"}, {"japanese": "かっこいい", "reading": "かっこいい", "english": "good style. cool"}, {"japanese": "かなしい", "reading": "かなしい", "english": "sad"}, {"japanese": "かわいい", "reading": "かわいい", "english": "cute"}, {"japanese": "きいろ", "reading": "きいろ", "english": "yellow"}, {"japanese": "きらい", "reading": "きらい", "english": "hate"}, {"japanese": "きれい", "reading": "きれい", "english": "clean, pretty"}, {"japanese": "くさい", "reading": "くさい", "english": "smell"}, {"japanese": "こわい", "reading": "こわい", "english": "scary"}, {"japanese": "さかん", "reading": "さかん", "english": "popular, prosperous"}, {"japanese": "さびしい", "reading": "さびしい", "english": "lonely"}, {"japanese": "しろい", "reading": "しろい", "english": "white"}, {"japanese": "しんせつ", "reading": "しんせつ", "english": "kind"}, {"japanese": "しんぱい", "reading": "しんぱい", "english": "worry"}, {"japanese": "すくない", "reading": "すくない", "english": "few"}, {"japanese": "すごい", "reading": "すごい", "english": "wow"}, {"japanese": "すごく", "reading": "すごく", "english": "very, immensely"}, {"japanese": "すこし", "reading": "すこし", "english": "small, w"}, {"japanese": "すずしい", "reading": "すずしい", "english": "cool"}, {"japanese": "すてき", "reading": "すてき", "english": "cool,great"}, {"japanese": "すばらしい", "reading": "すばらしい", "english": "wonderful"}, {"japanese": "せまい", "reading": "せまい", "english": "narrow"}, {"japanese": "たいへん", "reading": "たいへん", "english": "terribly, awfully"}, {"japanese": "たくさん", "reading": "たくさん", "english": "lots"}, {"japanese": "たすける", "reading": "たすける", "english": "to help"}, {"japanese": "たのしい", "reading": "たのしい", "english": "fun"}, {"japanese": "だめ", "reading": "だめ", "english": "bad"}, {"japanese": "ちかい", "reading": "ちかい", "english": "close"}, {"japanese": "ちゃいろ", "reading": "ちゃいろ", "english": "brown"}, {"japanese": "つまらない", "reading": "つまらない", "english": "boring"}, {"japanese": "つよい", "reading": "つよい", "english": "strong"}, {"japanese": "とおい", "reading": "とおい", "english": "far"}, {"japanese": "ながい", "reading": "ながい", "english": "long"}, {"japanese": "にぎやか", "reading": "にぎやか", "english": "lively, busy"}, {"japanese": "はずかしい", "reading": "はずかしい", "english": "embarrasing, shy"}, {"japanese": "はやく", "reading": "はやく", "english": "early"}, {"japanese": "ハンサム", "reading": "ハンサム", "english": "handsome"}, {"japanese": "ひくい", "reading": "ひくい", "english": "short, low"}, {"japanese": "びっくりする", "reading": "びっくりする", "english": "to be surprised"}, {"japanese": "ひどい", "reading": "ひどい", "english": "awful"}, {"japanese": "ひろい", "reading": "ひろい", "english": "wide"}, {"japanese": "ピンク", "reading": "ピンク", "english": "pink"}, {"japanese": "ふるい", "reading": "ふるい", "english": "old"}, {"japanese": "へん", "reading": "へん", "english": "weird, strange"}, {"japanese": "みじかい", "reading": "みじかい", "english": "short (lenght)"}, {"japanese": "やさしい", "reading": "やさしい", "english": "nice, easy"}, {"japanese": "やすみ", "reading": "やすみ", "english": "rest, holiday"}, {"japanese": "ゆっくり", "reading": "ゆっくり", "english": "slowly"}, {"japanese": "よろこぶ", "reading": "よろこぶ", "english": "to be delighted"}, {"japanese": "わかい", "reading": "わかい", "english": "young"}, {"japanese": "休む", "reading": "やすむ", "english": "rest"}, {"japanese": "大きい", "reading": "おおきい", "english": "big"}, {"japanese": "大きな", "reading": "おおきな", "english": "large"}, {"japanese": "小さい", "reading": "ちいさい", "english": "small"}, {"japanese": "早く", "reading": "はやく", "english": "hurry"}, {"japanese": "金ぱつ", "reading": "きんぱつ", "english": "blonde"}, {"japanese": "高い", "reading": "たかい", "english": "high"}]}, {"section": "Family Members", "words": [{"japanese": "あかちゃん", "reading": "あかちゃん", "english": "baby"}, {"japanese": "あに", "reading": "あに", "english": "older brother"}, {"japanese": "あね", "reading": "あね", "english": "older sister"}, {"japanese": "いもうと", "reading": "いもうと", "english": "younger sister"}, {"japanese": "おじいさん", "reading": "おじいさん", "english": "Grandfather"}, {"japanese": "おじさん", "reading": "おじさん", "english": "Uncle"}, {"japanese": "おとうと", "reading": "おとうと", "english": "younger brother"}, {"japanese": "おば", "reading": "おば", "english": "aunt"}, {"japanese": "おばあさん", "reading": "おばあさん", "english": "Grandmother"}, {"japanese": "おばさん", "reading": "おばさん", "english": "aunty"}, {"japanese": "おや", "reading": "おや", "english": "parents"}, {"japanese": "お母さん", "reading": "おかあさん", "english": "Mother"}, {"japanese": "お父さん", "reading": "おとうさん", "english": "Father"}, {"japanese": "お金もち", "reading": "おかねもち", "english": "rich person"}, {"japanese": "しゅじん", "reading": "しゅじん", "english": "husband"}, {"japanese": "むすこ", "reading": "むすこ", "english": "son"}, {"japanese": "むすめ", "reading": "むすめ", "english": "daughter"}, {"japanese": "家ぞく", "reading": "かぞく", "english": "family"}, {"japanese": "母", "reading": "はは", "english": "mum"}, {"japanese": "父", "reading": "ちち", "english": "dad"}]}, {"section": "Parts of the Body", "words": [{"japanese": "あし", "reading": "あし", "english": "leg"}, {"japanese": "あたま", "reading": "あたま", "english": "head"}, {"japanese": "おなか", "reading": "おなか", "english": "stomach"}, {"japanese": "かお", "reading": "かお", "english": "face"}, {"japanese": "かみのけ", "reading": "かみのけ", "english": "hair"}, {"japanese": "からだ", "reading": "からだ", "english": "body"}, {"japanese": "せ", "reading": "せ", "english": "height"}, {"japanese": "ゆび", "reading": "ゆび", "english": "finger"}, {"japanese": "口", "reading": "くち", "english": "mouth"}, {"japanese": "手", "reading": "て", "english": "hand"}, {"japanese": "はな", "reading": "はな", "english": "nose"}, {"japanese": "ひざ", "reading": "ひざ", "english": "knee"}, {"japanese": "みみ", "reading": "みみ", "english": "ears"}, {"japanese": "のど", "reading": "のど", "english": "throat"}, {"japanese": "くび", "reading": "くび", "english": "neck"}, {"japanese": "せなか", "reading": "せなか", "english": "back"}]}, {"section": "Housing", "words": [{"japanese": "アパート", "reading": "アパート", "english": "apartment"}, {"japanese": "うち", "reading": "うち", "english": "home"}, {"japanese": "おふろ", "reading": "おふろ", "english": "bath"}, {"japanese": "おわん", "reading": "おわん", "english": "bowl"}, {"japanese": "キッチン", "reading": "キッチン", "english": "kitchen"}, {"japanese": "せんたく", "reading": "せんたく", "english": "laundry"}, {"japanese": "そうじ", "reading": "そうじ", "english": "clean"}, {"japanese": "ダブルルーム", "reading": "ダブルルーム", "english": "double room"}, {"japanese": "ちか", "reading": "ちか", "english": "basement"}, {"japanese": "ちかく", "reading": "ちかく", "english": "close by"}, {"japanese": "デコレーション", "reading": "デコレーション", "english": "decoration"}, {"japanese": "テレビ", "reading": "テレビ", "english": "television, TV"}, {"japanese": "トイレ", "reading": "トイレ", "english": "toilet"}, {"japanese": "ファミリールーム", "reading": "ファミリールーム", "english": "family room"}, {"japanese": "へや", "reading": "へや", "english": "room"}, {"japanese": "まど", "reading": "まど", "english": "window"}, {"japanese": "ラジオ", "reading": "ラジオ", "english": "radio"}, {"japanese": "れんらくする", "reading": "れんらくする", "english": "to contact"}, {"japanese": "わしつ", "reading": "わしつ", "english": "japanese room"}, {"japanese": "住む", "reading": "すむ", "english": "to live"}, {"japanese": "家", "reading": "いえ", "english": "house"}, {"japanese": "目ざま時けい", "reading": "めざましとけい", "english": "Alarm Clock"}]}, {"section": "Family / Friends", "words": [{"japanese": "いぬ", "reading": "いぬ", "english": "dog"}, {"japanese": "うさぎ", "reading": "うさぎ", "english": "rabbit"}, {"japanese": "うま", "reading": "うま", "english": "horse"}, {"japanese": "おんなの子", "reading": "おんなのこ", "english": "girl"}, {"japanese": "お年より", "reading": "おとしより", "english": "older people"}, {"japanese": "ガールフレンド", "reading": "ガールフレンド", "english": "girlfriend"}, {"japanese": "さる", "reading": "さる", "english": "monkey"}, {"japanese": "どうぶつ", "reading": "どうぶつ", "english": "animal"}, {"japanese": "とら", "reading": "とら", "english": "tiger"}, {"japanese": "とり", "reading": "とり", "english": "bird"}, {"japanese": "ねこ", "reading": "ねこ", "english": "cat"}, {"japanese": "パンダ", "reading": "パンダ", "english": "panda"}, {"japanese": "ひつじ", "reading": "ひつじ", "english": "sheep"}, {"japanese": "ぶた", "reading": "ぶた", "english": "pig"}, {"japanese": "ペット", "reading": "ペット", "english": "pet"}, {"japanese": "へび", "reading": "へび", "english": "snake"}, {"japanese": "ボーイフレンド", "reading": "ボーイフレンド", "english": "boyfriend"}, {"japanese": "ホーストフャミリー", "reading": "ホーストフャミリー", "english": "host family"}, {"japanese": "ホスト", "reading": "ホスト", "english": "host"}, {"japanese": "ホストシスター", "reading": "ホストシスター", "english": "host sister"}, {"japanese": "一しょ", "reading": "いっしょ", "english": "together"}, {"japanese": "一人", "reading": "ひとり", "english": "by one's self, alone"}, {"japanese": "友だち", "reading": "ともだち", "english": "friend"}, {"japanese": "友子", "reading": "とみこ", "english": "Tomoko"}, {"japanese": "女", "reading": "おんな", "english": "woman"}, {"japanese": "子ども", "reading": "こども", "english": "child"}]}, {"section": "Neighbourhood (General)", "words": [{"japanese": "いろいろ", "reading": "いろいろ", "english": "various"}, {"japanese": "カラオケ・ボックス", "reading": "カラオケ・ボックス", "english": "Karaoke Box"}, {"japanese": "きっさてん", "reading": "きっさてん", "english": "tea house"}, {"japanese": "きょうかい", "reading": "きょうかい", "english": "church"}, {"japanese": "ぎんこう", "reading": "ぎんこう", "english": "bank"}, {"japanese": "コミュニティー", "reading": "コミュニティー", "english": "community"}, {"japanese": "シ テ ィ ー", "reading": "シ テ ィ ー", "english": "city"}, {"japanese": "ジム", "reading": "ジム", "english": "gym"}, {"japanese": "しめる", "reading": "しめる", "english": "close/ shut"}, {"japanese": "スーパー", "reading": "スーパー", "english": "supermarket"}, {"japanese": "そと", "reading": "そと", "english": "outside"}, {"japanese": "どう物えん", "reading": "どうぶつえん", "english": "zoo"}, {"japanese": "どこ", "reading": "どこ", "english": "where"}, {"japanese": "となり", "reading": "となり", "english": "next to"}, {"japanese": "にくや", "reading": "にくや", "english": "butcher"}, {"japanese": "びんぼう", "reading": "びんぼう", "english": "poor, poverty-stricken"}, {"japanese": "ふべん", "reading": "ふべん", "english": "inconvient"}, {"japanese": "べんり", "reading": "べんり", "english": "convenient"}, {"japanese": "マルチカルチャー", "reading": "マルチカルチャー", "english": "multicultural"}, {"japanese": "ゆうべ", "reading": "ゆうべ", "english": "evening"}, {"japanese": "所", "reading": "ところ", "english": "place"}, {"japanese": "町", "reading": "まち", "english": "town"}]}, {"section": "Places of Interest in Australia", "words": [{"japanese": "オーストラリア", "reading": "オーストラリア", "english": "Australia"}, {"japanese": "オーストラリア人", "reading": "オーストラリア人", "english": "Australian"}, {"japanese": "オペラハウス", "reading": "オペラハウス", "english": "opera house"}, {"japanese": "キャンプ", "reading": "キャンプ", "english": "camp"}, {"japanese": "キャンプファイヤー", "reading": "キャンプファイヤー", "english": "camp fire"}, {"japanese": "シ ド ニ ー", "reading": "シ ド ニ ー", "english": "Sydney"}, {"japanese": "シ ド ニ ー・ ハ ー バ ー", "reading": "シ ド ニ ー・ ハ ー バ ー", "english": "Sydney Harbour"}, {"japanese": "ハーバー", "reading": "ハーバー", "english": "habour"}, {"japanese": "ボンダイ", "reading": "ボンダイ", "english": "Bondi"}, {"japanese": "ボンダイ・ビーチ", "reading": "ボンダイ・ビーチ", "english": "bondi beach"}, {"japanese": "メルボルン", "reading": "メルボルン", "english": "Melbourne"}]}, {"section": "Neighbourhood (Scenery)", "words": [{"japanese": "けしき", "reading": "けしき", "english": "scenery"}, {"japanese": "こうえん", "reading": "こうえん", "english": "park"}, {"japanese": "こうばん", "reading": "こうばん", "english": "police box"}, {"japanese": "ごみ", "reading": "ごみ", "english": "rubbish"}, {"japanese": "コンビニ", "reading": "コンビニ", "english": "Conveience Store"}, {"japanese": "さくら", "reading": "さくら", "english": "cherry blossom"}, {"japanese": "どうろ", "reading": "どうろ", "english": "road、highway"}, {"japanese": "にわ", "reading": "にわ", "english": "garden"}, {"japanese": "はくぶつかん", "reading": "はくぶつかん", "english": "museum"}, {"japanese": "はな", "reading": "はな", "english": "flower"}, {"japanese": "はなや", "reading": "はなや", "english": "flowershop"}, {"japanese": "パンや", "reading": "パンや", "english": "bakery, bread shop"}, {"japanese": "ビーチ", "reading": "ビーチ", "english": "beach"}, {"japanese": "びじゅつかん", "reading": "びじゅつかん", "english": "art gallery"}, {"japanese": "ひまわり", "reading": "ひまわり", "english": "Sunflower"}, {"japanese": "プール", "reading": "プール", "english": "pool"}, {"japanese": "ぶんぼうぐ", "reading": "ぶんぼうぐ", "english": "staionery store"}, {"japanese": "ペットショップ", "reading": "ペットショップ", "english": "pet shop"}, {"japanese": "ぼくじょう", "reading": "ぼくじょう", "english": "farm"}, {"japanese": "みずうみ", "reading": "みずうみ", "english": "lake"}, {"japanese": "やきゅうじょう", "reading": "やきゅうじょう", "english": "Baseball field"}, {"japanese": "ゆうびんきょく", "reading": "ゆうびんきょく", "english": "post office"}, {"japanese": "レストラン", "reading": "レストラン", "english": "restaurant"}, {"japanese": "山", "reading": "やま", "english": "mountain"}, {"japanese": "川", "reading": "かわ", "english": "river"}, {"japanese": "木", "reading": "き", "english": "tree"}, {"japanese": "本や", "reading": "ほんや", "english": "book store"}, {"japanese": "水", "reading": "みず", "english": "water"}, {"japanese": "百円ショップ", "reading": "ひゃくえんショップ", "english": "100 Yen Shop"}]}, {"section": "Clothes", "words": [{"japanese": "T シャツ", "reading": "T シャツ", "english": "T Shirt"}, {"japanese": "かっこう・いい・わるい", "reading": "かっこう・いい・わるい", "english": "good style, bad style"}, {"japanese": "きもの", "reading": "きもの", "english": "kimono"}, {"japanese": "くつ", "reading": "くつ", "english": "shoes"}, {"japanese": "さいふ", "reading": "さいふ", "english": "wallet"}, {"japanese": "サングラス", "reading": "サングラス", "english": "sun glasses"}, {"japanese": "サンダル", "reading": "サンダル", "english": "Sandal"}, {"japanese": "スカート", "reading": "スカート", "english": "skirt"}, {"japanese": "トレンド", "reading": "トレンド", "english": "trend"}, {"japanese": "ネクタイ", "reading": "ネクタイ", "english": "neck tie"}, {"japanese": "ぼうし", "reading": "ぼうし", "english": "hat"}, {"japanese": "ようふく", "reading": "ようふく", "english": "western clothes"}]}, {"section": "Time words", "words": [{"japanese": "あいだ", "reading": "あいだ", "english": "between"}, {"japanese": "あさ", "reading": "あさ", "english": "morning"}, {"japanese": "あさごはん", "reading": "あさごはん", "english": "breakfast"}, {"japanese": "あさって", "reading": "あさって", "english": "day after tomorrow"}, {"japanese": "あした", "reading": "あした", "english": "tomorrow"}, {"japanese": "あと(で）", "reading": "あと(で）", "english": "after"}, {"japanese": "あととい", "reading": "あととい", "english": "day before yesterday"}, {"japanese": "あなた", "reading": "あなた", "english": "you"}, {"japanese": "あまり・あんまり", "reading": "あまり・あんまり", "english": "not very"}, {"japanese": "いつ", "reading": "いつ", "english": "when"}, {"japanese": "いつも", "reading": "いつも", "english": "always"}, {"japanese": "きのう", "reading": "きのう", "english": "yesterday"}, {"japanese": "きょ年", "reading": "きょ年", "english": "last year"}, {"japanese": "ぐらい", "reading": "ぐらい", "english": "about"}, {"japanese": "けど", "reading": "けど", "english": "but"}, {"japanese": "ここ", "reading": "ここ", "english": "here"}, {"japanese": "ごご", "reading": "ごご", "english": "noon   P.M"}, {"japanese": "ごぜん", "reading": "ごぜん", "english": "before noon A.M"}, {"japanese": "こと", "reading": "こと", "english": "thing"}, {"japanese": "この", "reading": "この", "english": "this"}, {"japanese": "これから", "reading": "これから", "english": "afther this"}, {"japanese": "ごろ", "reading": "ごろ", "english": "(approximate) time, around"}, {"japanese": "ずっと", "reading": "ずっと", "english": "for a long time"}, {"japanese": "ぜんぜん", "reading": "ぜんぜん", "english": "never"}, {"japanese": "そこ", "reading": "そこ", "english": "over there"}, {"japanese": "たいてい", "reading": "たいてい", "english": "usually"}, {"japanese": "ちょっと", "reading": "ちょっと", "english": "a little"}, {"japanese": "ときどき", "reading": "ときどき", "english": "sometimes"}, {"japanese": "やく", "reading": "やく", "english": "approximately, about"}, {"japanese": "よく", "reading": "よく", "english": "often"}, {"japanese": "よる", "reading": "よる", "english": "night"}, {"japanese": "今", "reading": "いま", "english": "now"}, {"japanese": "今ばん", "reading": "こんばん", "english": "tonight, evening"}, {"japanese": "今年", "reading": "ことし", "english": "this year"}, {"japanese": "今週", "reading": "こんしゅう", "english": "this week"}, {"japanese": "先月", "reading": "せんげつ", "english": "last month"}, {"japanese": "先週", "reading": "せんしゅう", "english": "last week"}, {"japanese": "午前", "reading": "ごぜん", "english": "a.m, before noon"}, {"japanese": "半", "reading": "はん", "english": "half"}, {"japanese": "土よう日", "reading": "どようび", "english": "Saturday"}, {"japanese": "日よう日", "reading": "にちようび", "english": "Sunday"}, {"japanese": "時", "reading": "とき", "english": "time"}, {"japanese": "時間", "reading": "じかん", "english": "time period"}, {"japanese": "月よう日", "reading": "げつようび", "english": "Monday"}, {"japanese": "木よう日", "reading": "もくよううび", "english": "Thursday"}, {"japanese": "来た時", "reading": "きたとき", "english": "time came"}, {"japanese": "来年", "reading": "らいねん", "english": "next year"}, {"japanese": "来月", "reading": "らいげつ", "english": "next month"}, {"japanese": "来週", "reading": "らいしゅう", "english": "next week"}, {"japanese": "毎", "reading": "まい", "english": "every"}, {"japanese": "毎あさ", "reading": "まいあさ", "english": "every morning"}, {"japanese": "毎ばん", "reading": "まいばん", "english": "every evening"}, {"japanese": "毎年", "reading": "まいとし", "english": "every year"}, {"japanese": "毎日", "reading": "まいにち", "english": "every day"}, {"japanese": "毎月", "reading": "まいげつ", "english": "every month"}, {"japanese": "毎週", "reading": "まいしゅう", "english": "Every Week"}, {"japanese": "水よう日", "reading": "すいようび", "english": "Wednesday"}, {"japanese": "火よう日", "reading": "かようび", "english": "Tuesday"}, {"japanese": "週まつ", "reading": "しゅうまつ", "english": "weekend"}, {"japanese": "週間", "reading": "しゅうかん", "english": "week period"}, {"japanese": "金よう日", "reading": "きんようび", "english": "Friday"}]}, {"section": "School Life (General)", "words": [{"japanese": "あたる", "reading": "あたる", "english": "to be hit, to be right"}, {"japanese": "いいてん", "reading": "いいてん", "english": "good mark"}, {"japanese": "いっしょうけんめい", "reading": "いっしょうけんめい", "english": "with all ones might"}, {"japanese": "いっぱい", "reading": "いっぱい", "english": "full"}, {"japanese": "イベント", "reading": "イベント", "english": "Event"}, {"japanese": "うんどうかい", "reading": "うんどうかい", "english": "Sports Carnival"}, {"japanese": "えんそく", "reading": "えんそく", "english": "excursion"}, {"japanese": "おそく", "reading": "おそく", "english": "late"}, {"japanese": "おと", "reading": "おと", "english": "sound"}, {"japanese": "おなじ", "reading": "おなじ", "english": "same"}, {"japanese": "かならず", "reading": "かならず", "english": "without fail"}, {"japanese": "かんじ", "reading": "かんじ", "english": "Kanji"}, {"japanese": "かんたん", "reading": "かんたん", "english": "simple, basic"}, {"japanese": "がんばる", "reading": "がんばる", "english": "do you best"}, {"japanese": "きそく", "reading": "きそく", "english": "rule"}, {"japanese": "クラスサイズ", "reading": "クラスサイズ", "english": "class size"}, {"japanese": "クラスメート", "reading": "クラスメート", "english": "class mate"}, {"japanese": "グループ", "reading": "グループ", "english": "group"}, {"japanese": "けす", "reading": "けす", "english": "to erase, to turn off"}, {"japanese": "けんきゅう", "reading": "けんきゅう", "english": "study, research"}, {"japanese": "こうかんりゅ う学", "reading": "こうかんりゅうがく", "english": "exchange student"}, {"japanese": "こたえる", "reading": "こたえる", "english": "to answer, reply"}, {"japanese": "コンテスト", "reading": "コンテスト", "english": "contest"}, {"japanese": "しけん", "reading": "しけん", "english": "exam"}, {"japanese": "しつもん", "reading": "しつもん", "english": "question"}, {"japanese": "しまい校", "reading": "しまいこう", "english": "sister school"}, {"japanese": "じゅぎょう中", "reading": "じゅぎょうちゅう", "english": "during class"}, {"japanese": "じゅく", "reading": "じゅく", "english": "cram school"}, {"japanese": "しゅくだい", "reading": "しゅくだい", "english": "home work"}, {"japanese": "じゅんびする", "reading": "じゅんびする", "english": "prepare"}, {"japanese": "じょうず", "reading": "じょうず", "english": "good at"}, {"japanese": "しょう学金", "reading": "しょうがくきん", "english": "schoolarship"}, {"japanese": "しらべる", "reading": "しらべる", "english": "to check, to examine"}, {"japanese": "しる", "reading": "しる", "english": "to know"}, {"japanese": "ストレス", "reading": "ストレス", "english": "stress"}, {"japanese": "せいせき", "reading": "せいせき", "english": "grades, marks"}, {"japanese": "せいと", "reading": "せいと", "english": "student"}, {"japanese": "セメスター", "reading": "セメスター", "english": "semester"}, {"japanese": "セレモニー", "reading": "セレモニー", "english": "ceremony"}, {"japanese": "そつぎょう", "reading": "そつぎょう", "english": "graduate"}, {"japanese": "たいかい", "reading": "たいかい", "english": "assembly"}, {"japanese": "たいせつ", "reading": "たいせつ", "english": "important"}, {"japanese": "たんご", "reading": "たんご", "english": "vocabulary"}, {"japanese": "つづく", "reading": "つづく", "english": "to continue"}, {"japanese": "テスト", "reading": "テスト", "english": "test"}, {"japanese": "どくしょ", "reading": "どくしょ", "english": "reading"}, {"japanese": "とくべつ", "reading": "とくべつ", "english": "special"}, {"japanese": "としょかん", "reading": "としょかん", "english": "library"}, {"japanese": "トレーニング", "reading": "トレーニング", "english": "training"}, {"japanese": "ならう", "reading": "ならう", "english": "to learn"}, {"japanese": "ニュースレター", "reading": "ニュースレター", "english": "news letter"}, {"japanese": "ノート", "reading": "ノート", "english": "notebook"}, {"japanese": "ひつよう", "reading": "ひつよう", "english": "necessary"}, {"japanese": "ひるやすみ", "reading": "ひるやすみ", "english": "lunch"}, {"japanese": "フォーマル", "reading": "フォーマル", "english": "formal"}, {"japanese": "フォーム", "reading": "フォーム", "english": "form"}, {"japanese": "ぶかつどう", "reading": "ぶかつどう", "english": "club activity"}, {"japanese": "ふつ", "reading": "ふつ", "english": "normal"}, {"japanese": "プログラム", "reading": "プログラム", "english": "program"}, {"japanese": "へた", "reading": "へた", "english": "bad unskilful"}, {"japanese": "ぺらぺら", "reading": "ぺらぺら", "english": "fluent"}, {"japanese": "べんきょう", "reading": "べんきょう", "english": "study"}, {"japanese": "べんきょうする", "reading": "べんきょうする", "english": "to study"}, {"japanese": "ほうかご", "reading": "ほうかご", "english": "after school"}, {"japanese": "むずかしい", "reading": "むずかしい", "english": "difficult"}, {"japanese": "メンバー", "reading": "メンバー", "english": "member"}, {"japanese": "もんだい", "reading": "もんだい", "english": "problem"}, {"japanese": "やくにたつ", "reading": "やくにたつ", "english": "to be helpful, to be useful"}, {"japanese": "ユニフォーム・ショップ", "reading": "ユニフォーム・ショップ", "english": "uniform shop"}, {"japanese": "ようちえん", "reading": "ようちえん", "english": "preschool"}, {"japanese": "ラッキー", "reading": "ラッキー", "english": "lucky"}, {"japanese": "りゅう学生", "reading": "りゅうがくせい", "english": "overseas student"}, {"japanese": "レッスン", "reading": "レッスン", "english": "Lesson"}, {"japanese": "レビュー", "reading": "レビュー", "english": "review"}, {"japanese": "ワークシート", "reading": "ワークシート", "english": "worksheet"}, {"japanese": "わかる", "reading": "わかる", "english": "understand"}, {"japanese": "わすれる", "reading": "わすれる", "english": "to forget"}, {"japanese": "一がっき", "reading": "一がっき", "english": "1st Term"}, {"japanese": "上ず", "reading": "じょうず", "english": "good"}, {"japanese": "二がっき", "reading": "二がっき", "english": "2nd term"}, {"japanese": "十二年生", "reading": "じゅうにねんせい", "english": "Year 12"}, {"japanese": "大きらい", "reading": "だいきらい", "english": "big hate"}, {"japanese": "大好き", "reading": "だいすき", "english": "love, big like"}, {"japanese": "大学", "reading": "だいがく", "english": "university"}, {"japanese": "学校", "reading": "がっこう", "english": "school"}, {"japanese": "校ちょう", "reading": "こうちょう", "english": "principal"}, {"japanese": "生とたち", "reading": "せいとたち", "english": "students"}, {"japanese": "高校", "reading": "こうこう", "english": "high school"}, {"japanese": "高校生", "reading": "こうこうせい", "english": "high school student"}, {"japanese": "やめたら", "reading": "やめたら", "english": "If you quit"}]}, {"section": "Activities", "words": [{"japanese": "あびる", "reading": "あびる", "english": "scrub/ shower"}, {"japanese": "あらう", "reading": "あらう", "english": "wash"}, {"japanese": "ある", "reading": "ある", "english": "inanimate"}, {"japanese": "あるく", "reading": "あるく", "english": "to walk"}, {"japanese": "いる", "reading": "いる", "english": "to be (animate)"}, {"japanese": "いれる", "reading": "いれる", "english": "to put in"}, {"japanese": "うた", "reading": "うた", "english": "song"}, {"japanese": "うたう", "reading": "うたう", "english": "sing"}, {"japanese": "うまれ", "reading": "うまれ", "english": "birth, birthplace"}, {"japanese": "うる", "reading": "うる", "english": "to sell"}, {"japanese": "おきる", "reading": "おきる", "english": "to wake up"}, {"japanese": "おく", "reading": "おく", "english": "to put, to place"}, {"japanese": "おくれる", "reading": "おくれる", "english": "to be late"}, {"japanese": "おこる", "reading": "おこる", "english": "to get angry"}, {"japanese": "おしえる", "reading": "おしえる", "english": "to teach"}, {"japanese": "およぐ", "reading": "およぐ", "english": "to swim"}, {"japanese": "おわる", "reading": "おわる", "english": "to finish, to end"}, {"japanese": "かえる", "reading": "かえる", "english": "return home"}, {"japanese": "かく", "reading": "かく", "english": "write, draw, paint"}, {"japanese": "かつ", "reading": "かつ", "english": "win"}, {"japanese": "かりる", "reading": "かりる", "english": "to borrow"}, {"japanese": "かわる", "reading": "かわる", "english": "change"}, {"japanese": "かんがえる", "reading": "かんがえる", "english": "to think"}, {"japanese": "きまる", "reading": "きまる", "english": "to decide"}, {"japanese": "キャンセル", "reading": "キャンセル", "english": "cancel"}, {"japanese": "きる", "reading": "きる", "english": "to wear"}, {"japanese": "くれる", "reading": "くれる", "english": "to give"}, {"japanese": "けんかする", "reading": "けんかする", "english": "fight"}, {"japanese": "こまる", "reading": "こまる", "english": "to be troubled"}, {"japanese": "こむ", "reading": "こむ", "english": "crowd"}, {"japanese": "さがす", "reading": "さがす", "english": "to search"}, {"japanese": "さっぽろ", "reading": "さっぽろ", "english": "Sapporo"}, {"japanese": "さんかする", "reading": "さんかする", "english": "to particiapte"}, {"japanese": "さんぽ", "reading": "さんぽ", "english": "stroll"}, {"japanese": "シャワー", "reading": "シャワー", "english": "shower"}, {"japanese": "じゅんび", "reading": "じゅんび", "english": "prepare"}, {"japanese": "しょうたい", "reading": "しょうたい", "english": "invitation"}, {"japanese": "すいえい", "reading": "すいえい", "english": "swim"}, {"japanese": "すう", "reading": "すう", "english": "smoke"}, {"japanese": "すてる", "reading": "すてる", "english": "throw away"}, {"japanese": "せつめいする", "reading": "せつめいする", "english": "explain"}, {"japanese": "たのしみにする", "reading": "たのしみにする", "english": "to look forward"}, {"japanese": "ためる", "reading": "ためる", "english": "to save up"}, {"japanese": "ちがう", "reading": "ちがう", "english": "difrent"}, {"japanese": "つかい", "reading": "つかい", "english": "to use"}, {"japanese": "つかれる", "reading": "つかれる", "english": "tired"}, {"japanese": "つくる", "reading": "つくる", "english": "to make"}, {"japanese": "つける", "reading": "つける", "english": "to turn on, switch on"}, {"japanese": "できる", "reading": "できる", "english": "can do"}, {"japanese": "てつだう", "reading": "てつだう", "english": "to help"}, {"japanese": "なくす", "reading": "なくす", "english": "to lose, to remove"}, {"japanese": "なくなる", "reading": "なくなる", "english": "to disapeare, to be lost"}, {"japanese": "なる", "reading": "なる", "english": "become"}, {"japanese": "ねる", "reading": "ねる", "english": "sleep"}, {"japanese": "のぼる", "reading": "のぼる", "english": "to climb"}, {"japanese": "のむ", "reading": "のむ", "english": "to drink"}, {"japanese": "はいる", "reading": "はいる", "english": "to enter"}, {"japanese": "はじまる", "reading": "はじまる", "english": "to begin"}, {"japanese": "はしる", "reading": "はしる", "english": "run"}, {"japanese": "ひっこす", "reading": "ひっこす", "english": "move"}, {"japanese": "もつ", "reading": "もつ", "english": "hold"}, {"japanese": "もってかえる", "reading": "もってかえる", "english": "to take home"}, {"japanese": "もって来る", "reading": "もってくる", "english": "to bring, to take something along"}, {"japanese": "やすむ", "reading": "やすむ", "english": "to rest, to be absent, go to bed"}, {"japanese": "やめる", "reading": "やめる", "english": "to quit, to resign"}, {"japanese": "よむ", "reading": "よむ", "english": "to read"}, {"japanese": "亡くなる", "reading": "亡くなる", "english": "to die"}, {"japanese": "会う", "reading": "あう", "english": "to meet"}, {"japanese": "出かける", "reading": "でかける", "english": "to go out"}, {"japanese": "出す", "reading": "だす", "english": "to take out"}, {"japanese": "出る", "reading": "でる", "english": "to exit"}, {"japanese": "来る", "reading": "くる", "english": "come"}, {"japanese": "生まれ", "reading": "うまれ", "english": "birth"}, {"japanese": "聞く", "reading": "きく", "english": "listen"}, {"japanese": "見る", "reading": "みる", "english": "to see"}, {"japanese": "言う", "reading": "いう", "english": "to say"}, {"japanese": "話す", "reading": "はなす", "english": "はなす"}, {"japanese": "食べる", "reading": "たべる", "english": "to eat"}]}, {"section": "School Life (Subject)", "words": [{"japanese": "おんがく", "reading": "おんがく", "english": "music"}, {"japanese": "かもく", "reading": "かもく", "english": "subject"}, {"japanese": "クラッシク", "reading": "クラッシク", "english": "classic"}, {"japanese": "クラブ", "reading": "クラブ", "english": "Club"}, {"japanese": "けんじ", "reading": "けんじ", "english": "Kenji"}, {"japanese": "コース", "reading": "コース", "english": "course"}, {"japanese": "コンピューター", "reading": "コンピューター", "english": "computer"}, {"japanese": "すう学", "reading": "すうがく", "english": "maths"}, {"japanese": "スピーチ", "reading": "スピーチ", "english": "speech"}, {"japanese": "スペイン語", "reading": "スペインご", "english": "spanish"}, {"japanese": "たいいく", "reading": "たいいく", "english": "P.E"}, {"japanese": "ちり", "reading": "ちり", "english": "geography"}, {"japanese": "テクノロジー", "reading": "テクノロジー", "english": "technology"}, {"japanese": "デザイン", "reading": "デザイン", "english": "design"}, {"japanese": "ドイツ", "reading": "ドイツ", "english": "Germany"}, {"japanese": "ドイツ語", "reading": "ドイツ語", "english": "German langauge"}, {"japanese": "びじゅつ", "reading": "びじゅつ", "english": "art"}, {"japanese": "ぶつり", "reading": "ぶつり", "english": "physics"}, {"japanese": "フランス語", "reading": "フランス語", "english": "french"}, {"japanese": "れきし", "reading": "れきし", "english": "history"}, {"japanese": "中国語", "reading": "ちゅうごくご", "english": "Chinese"}, {"japanese": "日本語", "reading": "にほんご", "english": "Japanese"}]}, {"section": "School Life (Classroom Items)", "words": [{"japanese": "えんぴつ", "reading": "えんぴつ", "english": "pencil"}, {"japanese": "かみ", "reading": "かみ", "english": "paper"}, {"japanese": "きょうしつ", "reading": "きょうしつ", "english": "classroom"}, {"japanese": "きょうじゅ", "reading": "きょうじゅ", "english": "prossor"}, {"japanese": "けいさんき", "reading": "けいさんき", "english": "calculator"}, {"japanese": "けいたい", "reading": "けいたい", "english": "mobile"}, {"japanese": "けいたい電話", "reading": "けいたいでんわ", "english": "mobile phone"}, {"japanese": "けしゴム", "reading": "けしゴム", "english": "eraser, rubber"}, {"japanese": "じゅぎょう", "reading": "じゅぎょう", "english": "class"}, {"japanese": "ベン", "reading": "ベン", "english": "pen"}, {"japanese": "ものさし", "reading": "ものさし", "english": "rulers"}, {"japanese": "物", "reading": "もの", "english": "thing"}]}, {"section": "School Life (Classroom Instructions)", "words": [{"japanese": "しずか", "reading": "しずか", "english": "quiet"}, {"japanese": "しまる", "reading": "しまる", "english": "close"}, {"japanese": "すわる", "reading": "すわる", "english": "to sit"}, {"japanese": "セーブ", "reading": "セーブ", "english": "save"}, {"japanese": "たつ", "reading": "たつ", "english": "to stand"}]}, {"section": "Eating", "words": [{"japanese": "アイスクリーム", "reading": "アイスクリーム", "english": "Ice Cream"}, {"japanese": "あぶら", "reading": "あぶら", "english": "oil"}, {"japanese": "おかし", "reading": "おかし", "english": "lolly"}, {"japanese": "おこのみやき", "reading": "おこのみやき", "english": "Okonomiyaki"}, {"japanese": "おさけ", "reading": "おさけ", "english": "rice wine, Sake"}, {"japanese": "おにぎり", "reading": "おにぎり", "english": "rice ball"}, {"japanese": "おやつ", "reading": "おやつ", "english": "snack"}, {"japanese": "ぎゅうにゅう", "reading": "ぎゅうにゅう", "english": "milk"}, {"japanese": "くだもの", "reading": "くだもの", "english": "fruit"}, {"japanese": "ケーキ", "reading": "ケーキ", "english": "cake"}, {"japanese": "コーラ", "reading": "コーラ", "english": "cola"}, {"japanese": "ごはん", "reading": "ごはん", "english": "rice, meal"}, {"japanese": "サーモン", "reading": "サーモン", "english": "salmon"}, {"japanese": "さかな", "reading": "さかな", "english": "fish"}, {"japanese": "さとう", "reading": "さとう", "english": "sugar"}, {"japanese": "さら", "reading": "さら", "english": "plate"}, {"japanese": "サラダ", "reading": "サラダ", "english": "salad"}, {"japanese": "シーフード", "reading": "シーフード", "english": "sea food"}, {"japanese": "シェフ", "reading": "シェフ", "english": "Chief"}, {"japanese": "しお", "reading": "しお", "english": "salt"}, {"japanese": "しょくじ", "reading": "しょくじ", "english": "food"}, {"japanese": "シリアル", "reading": "シリアル", "english": "cereal"}, {"japanese": "しんせん", "reading": "しんせん", "english": "fresh"}, {"japanese": "すし", "reading": "すし", "english": "sushi"}, {"japanese": "スプーン", "reading": "スプーン", "english": "spoon"}, {"japanese": "チーズ", "reading": "チーズ", "english": "cheese"}, {"japanese": "チーズケーキ", "reading": "チーズケーキ", "english": "Cheese Cake"}, {"japanese": "チキン", "reading": "チキン", "english": "chicken"}, {"japanese": "チップス", "reading": "チップス", "english": "chips"}, {"japanese": "ちゅうもん", "reading": "ちゅうもん", "english": "to order"}, {"japanese": "ちゅうもんする", "reading": "ちゅうもんする", "english": "of course"}, {"japanese": "チョコレート", "reading": "チョコレート", "english": "chocolate"}, {"japanese": "デザート", "reading": "デザート", "english": "dessert"}, {"japanese": "てりやき", "reading": "てりやき", "english": "teriyaki"}, {"japanese": "てんぷら", "reading": "てんぷら", "english": "tempura"}, {"japanese": "とうふ", "reading": "とうふ", "english": "tofu"}, {"japanese": "なべ", "reading": "なべ", "english": "pot, stew"}, {"japanese": "にく", "reading": "にく", "english": "meat"}, {"japanese": "のみ物", "reading": "のみもの", "english": "drink"}, {"japanese": "のり", "reading": "のり", "english": "seaweed"}, {"japanese": "パ ン ケ ー キ", "reading": "パ ン ケ ー キ", "english": "pancake"}, {"japanese": "パーティー", "reading": "パーティー", "english": "party"}, {"japanese": "バーベキュー", "reading": "バーベキュー", "english": "BBQ"}, {"japanese": "パスタ", "reading": "パスタ", "english": "pasta"}, {"japanese": "ばんごはん", "reading": "ばんごはん", "english": "dinner"}, {"japanese": "ハンバーガー", "reading": "ハンバーガー", "english": "hamburger"}, {"japanese": "ピザ", "reading": "ピザ", "english": "pizza"}, {"japanese": "ひるごはん", "reading": "ひるごはん", "english": "lunch"}, {"japanese": "ファーストフード", "reading": "ファーストフード", "english": "fast food"}, {"japanese": "ベジタリアン", "reading": "ベジタリアン", "english": "vegeterian"}, {"japanese": "べんとう", "reading": "べんとう", "english": "box lunch"}, {"japanese": "ホットドッグ", "reading": "ホットドッグ", "english": "hot dog"}, {"japanese": "まきずし", "reading": "まきずし", "english": "rolled sushi"}, {"japanese": "ミートパイ", "reading": "ミートパイ", "english": "meat pie"}, {"japanese": "みそしる", "reading": "みそしる", "english": "miso soup"}, {"japanese": "メニュー", "reading": "メニュー", "english": "menu"}, {"japanese": "やきそば", "reading": "やきそば", "english": "yakisoba"}, {"japanese": "やきとり", "reading": "やきとり", "english": "yakitori"}, {"japanese": "やさい", "reading": "やさい", "english": "vegetable"}, {"japanese": "ヨーグルト", "reading": "ヨーグルト", "english": "yogurt"}, {"japanese": "よう食", "reading": "ようしょく", "english": "Western Food"}, {"japanese": "ラーメン", "reading": "ラーメン", "english": "ramen"}, {"japanese": "わ食", "reading": "わしょく", "english": "japanese food"}, {"japanese": "箸", "reading": "はし", "english": "chopsticks"}, {"japanese": "何めいさま", "reading": "なんめいさま", "english": "How many people in your party?"}, {"japanese": "オレンジ・ジュース", "reading": "オレンジ・ジュース", "english": "Orange Juice"}]}, {"section": "Visiting People", "words": [{"japanese": "あう", "reading": "あう", "english": "meet"}, {"japanese": "あげる", "reading": "あげる", "english": "to give"}, {"japanese": "いただく", "reading": "いただく", "english": "Thanks"}]}, {"section": "Customs", "words": [{"japanese": "ありがとう", "reading": "ありがとう", "english": "thanks"}, {"japanese": "ありがとうございます", "reading": "ありがとうございます", "english": "thank you very much"}, {"japanese": "おかげ", "reading": "おかげ", "english": "grace"}, {"japanese": "おしょうがつ", "reading": "おしょうがつ", "english": "new years"}, {"japanese": "おせわ", "reading": "おせわ", "english": "help, aid"}, {"japanese": "おねがいする", "reading": "おねがいする", "english": "please"}, {"japanese": "おはし", "reading": "おはし", "english": "chopsticks"}, {"japanese": "おめでとう", "reading": "おめでとう", "english": "congratulations"}, {"japanese": "おゆ", "reading": "おゆ", "english": "hot water"}, {"japanese": "お見まい", "reading": "おみまい", "english": "visiting the sick"}, {"japanese": "クリスマス", "reading": "クリスマス", "english": "Christmas"}, {"japanese": "けっこん", "reading": "けっこん", "english": "marriage, marry"}, {"japanese": "けっこんしき", "reading": "けっこんしき", "english": "marriage ceremony"}, {"japanese": "ごめん", "reading": "ごめん", "english": "sorry"}, {"japanese": "ただいま", "reading": "ただいま", "english": "welcome"}, {"japanese": "てつだい", "reading": "てつだい", "english": "to help"}, {"japanese": "でんとう", "reading": "でんとう", "english": "tradition"}, {"japanese": "どうぞよろしく", "reading": "どうぞよろしく", "english": "look after"}, {"japanese": "マナー", "reading": "マナー", "english": "manner"}, {"japanese": "もらう", "reading": "もらう", "english": "to receive"}]}, {"section": "Shopping", "words": [{"japanese": "いくら", "reading": "いくら", "english": "how much?"}, {"japanese": "いらっしゃいませ", "reading": "いらっしゃいませ", "english": "welcome"}, {"japanese": "うりば", "reading": "うりば", "english": "counter, selling area"}, {"japanese": "オープニング", "reading": "オープニング", "english": "Open"}, {"japanese": "おきゃくさん", "reading": "おきゃくさん", "english": "customer"}, {"japanese": "おみやげや", "reading": "おみやげや", "english": "souvenir shop"}, {"japanese": "おもちゃ", "reading": "おもちゃ", "english": "toy"}, {"japanese": "お金", "reading": "おかね", "english": "money"}, {"japanese": "かさ", "reading": "かさ", "english": "umbrella"}, {"japanese": "かしこまりました", "reading": "かしこまりました", "english": "certainly"}, {"japanese": "かばん", "reading": "かばん", "english": "bag"}, {"japanese": "カメラ", "reading": "カメラ", "english": "camera"}, {"japanese": "クレジットカード", "reading": "クレジットカード", "english": "credit card"}, {"japanese": "サ ー ビ ス", "reading": "サ ー ビ ス", "english": "service"}, {"japanese": "しんぶん", "reading": "しんぶん", "english": "newspaper"}, {"japanese": "せいふく", "reading": "せいふく", "english": "wallet"}, {"japanese": "タバコ", "reading": "タバコ", "english": "tabacco"}, {"japanese": "ディスカウント", "reading": "ディスカウント", "english": "discount"}, {"japanese": "デザイナー", "reading": "デザイナー", "english": "designer"}, {"japanese": "デジタル", "reading": "デジタル", "english": "digital"}, {"japanese": "デジタルカメラ", "reading": "デジタルカメラ", "english": "digital camera"}, {"japanese": "デパート", "reading": "デパート", "english": "department"}, {"japanese": "でまえ", "reading": "でまえ", "english": "home delivery"}, {"japanese": "てんいん", "reading": "てんいん", "english": "shop assitant"}, {"japanese": "どちら", "reading": "どちら", "english": "which one? (two alternatives)"}, {"japanese": "ねだん", "reading": "ねだん", "english": "price"}, {"japanese": "ばいてん", "reading": "ばいてん", "english": "canteen"}, {"japanese": "プレゼント", "reading": "プレゼント", "english": "present"}, {"japanese": "ほしい", "reading": "ほしい", "english": "desire, want"}, {"japanese": "みせ", "reading": "みせ", "english": "store, shop"}, {"japanese": "やすい", "reading": "やすい", "english": "cheap"}, {"japanese": "りょうきん", "reading": "りょうきん", "english": "e, charge"}, {"japanese": "出て行く", "reading": "でていく", "english": "to go out and away"}, {"japanese": "本", "reading": "ほん", "english": "book"}, {"japanese": "着る", "reading": "きる", "english": "wear"}, {"japanese": "買い物", "reading": "かいもの", "english": "shopping"}, {"japanese": "買う", "reading": "かう", "english": "to buy"}]}, {"section": "Sport", "words": [{"japanese": "アイススケート", "reading": "アイススケート", "english": "Ice Skate"}, {"japanese": "アメリカン・フットボール", "reading": "アメリカン・フットボール", "english": "American Football"}, {"japanese": "うんどう", "reading": "うんどう", "english": "exercise"}, {"japanese": "オリンピック", "reading": "オリンピック", "english": "olympic"}, {"japanese": "からて", "reading": "からて", "english": "karate"}, {"japanese": "けんどう", "reading": "けんどう", "english": "Kendo, ncing"}, {"japanese": "コーチ", "reading": "コーチ", "english": "coach"}, {"japanese": "サーフィン", "reading": "サーフィン", "english": "surfing"}, {"japanese": "サイクリング", "reading": "サイクリング", "english": "Cycling"}, {"japanese": "サッカー", "reading": "サッカー", "english": "soccer"}, {"japanese": "しあい", "reading": "しあい", "english": "match"}, {"japanese": "スキー", "reading": "スキー", "english": "ski"}, {"japanese": "スキーヤー", "reading": "スキーヤー", "english": "Skier"}, {"japanese": "スキーリゾート", "reading": "スキーリゾート", "english": "ski resort"}, {"japanese": "スノーボード", "reading": "スノーボード", "english": "snowboard"}, {"japanese": "スポーツ", "reading": "スポーツ", "english": "sport"}, {"japanese": "すもう", "reading": "すもう", "english": "sumo"}, {"japanese": "ダンス", "reading": "ダンス", "english": "dance"}, {"japanese": "チーム", "reading": "チーム", "english": "team"}, {"japanese": "テニス", "reading": "テニス", "english": "tennis"}, {"japanese": "ハイキング", "reading": "ハイキング", "english": "hiking"}, {"japanese": "バスケットボール", "reading": "バスケットボール", "english": "basketball"}, {"japanese": "バレーボール", "reading": "バレーボール", "english": "volleyball"}, {"japanese": "ピーチ", "reading": "ピーチ", "english": "pitch"}, {"japanese": "フットボール", "reading": "フットボール", "english": "football"}, {"japanese": "プレーヤー", "reading": "プレーヤー", "english": "player"}, {"japanese": "やきゅう", "reading": "やきゅう", "english": "baseball"}, {"japanese": "れんしゅうする", "reading": "れんしゅうする", "english": "pratice"}]}, {"section": "Interests", "words": [{"japanese": "あそぶ", "reading": "あそぶ", "english": "to play"}, {"japanese": "インターネット", "reading": "インターネット", "english": "internet"}, {"japanese": "ウィークエンド", "reading": "ウィークエンド", "english": "weekend"}, {"japanese": "ウェブサイト", "reading": "ウェブサイト", "english": "web site"}, {"japanese": "え", "reading": "え", "english": "picture"}, {"japanese": "えいが", "reading": "えいが", "english": "movie"}, {"japanese": "えいかいわ", "reading": "えいかいわ", "english": "english converstation"}, {"japanese": "えいが会", "reading": "えいがかい", "english": "movie club, film society"}, {"japanese": "おどり", "reading": "おどり", "english": "dance"}, {"japanese": "おわり", "reading": "おわり", "english": "the end"}, {"japanese": "がっき", "reading": "がっき", "english": "instrument"}, {"japanese": "かつどう", "reading": "かつどう", "english": "activity"}, {"japanese": "カラオケ", "reading": "カラオケ", "english": "Karaoke"}, {"japanese": "ギター", "reading": "ギター", "english": "guitar"}, {"japanese": "きょうみ", "reading": "きょうみ", "english": "interest"}, {"japanese": "ゲーム", "reading": "ゲーム", "english": "game"}, {"japanese": "コスプレ", "reading": "コスプレ", "english": "cosplay"}, {"japanese": "コンサート", "reading": "コンサート", "english": "Concert"}, {"japanese": "ざっし", "reading": "ざっし", "english": "magazine"}, {"japanese": "しゃしん", "reading": "しゃしん", "english": "photo"}, {"japanese": "じゆう", "reading": "じゆう", "english": "freedom"}, {"japanese": "しゅみ", "reading": "しゅみ", "english": "hobby"}, {"japanese": "じんじゃ", "reading": "じんじゃ", "english": "temple"}, {"japanese": "スペシャル", "reading": "スペシャル", "english": "special"}, {"japanese": "ソーシャルイベント", "reading": "ソーシャルイベント", "english": "socail event"}, {"japanese": "ソフト", "reading": "ソフト", "english": "software"}, {"japanese": "たいこ", "reading": "たいこ", "english": "drum"}, {"japanese": "だんだん", "reading": "だんだん", "english": "gradually"}, {"japanese": "チャット", "reading": "チャット", "english": "chat"}, {"japanese": "チャットルーム", "reading": "チャットルーム", "english": "chatroom"}, {"japanese": "チャンス", "reading": "チャンス", "english": "Chance"}, {"japanese": "チャンネル", "reading": "チャンネル", "english": "channel"}, {"japanese": "テーマ", "reading": "テーマ", "english": "theme"}, {"japanese": "テーマパーク", "reading": "テーマパーク", "english": "theme park"}, {"japanese": "でかける", "reading": "でかける", "english": "go out"}, {"japanese": "どくしょ会", "reading": "どくしょ会", "english": "book club, reading group"}, {"japanese": "とる", "reading": "とる", "english": "to take"}, {"japanese": "どんどん", "reading": "どんどん", "english": "rapidly"}, {"japanese": "のんびりする", "reading": "のんびりする", "english": "to relax"}, {"japanese": "バランス", "reading": "バランス", "english": "balance"}, {"japanese": "ばんぐみ", "reading": "ばんぐみ", "english": "program"}, {"japanese": "バンド", "reading": "バンド", "english": "band"}, {"japanese": "ハンドブック", "reading": "ハンドブック", "english": "band blog"}, {"japanese": "ピアノ", "reading": "ピアノ", "english": "piano"}, {"japanese": "ビテオ", "reading": "ビテオ", "english": "video"}, {"japanese": "ひま", "reading": "ひま", "english": "free"}, {"japanese": "ひまな時", "reading": "ひまなとき", "english": "free time"}, {"japanese": "ファン", "reading": "ファン", "english": "fan"}, {"japanese": "ボード", "reading": "ボード", "english": "board"}, {"japanese": "ポップ", "reading": "ポップ", "english": "pop"}, {"japanese": "マイク", "reading": "マイク", "english": "microphone"}, {"japanese": "まんが", "reading": "まんが", "english": "comic"}, {"japanese": "ミニ", "reading": "ミニ", "english": "mini"}, {"japanese": "ユース・クラブ", "reading": "ユース・クラブ", "english": "youth club"}, {"japanese": "リアル・タイム", "reading": "リアル・タイム", "english": "Real time"}, {"japanese": "りょうり", "reading": "りょうり", "english": "cuisine, cooking"}, {"japanese": "レシピ", "reading": "レシピ", "english": "recipe"}, {"japanese": "レジャー", "reading": "レジャー", "english": "lesuire"}, {"japanese": "一ばん好きな", "reading": "いちばんすきな", "english": "favourite"}, {"japanese": "人気", "reading": "にんき", "english": "popular"}, {"japanese": "好き", "reading": "すき", "english": "like"}, {"japanese": "弾く", "reading": "ひく", "english": "to strum"}]}, {"section": "Weather / Seasons", "words": [{"japanese": "あたたかい", "reading": "あたたかい", "english": "warm"}, {"japanese": "あつい", "reading": "あつい", "english": "hot"}, {"japanese": "あめ", "reading": "あめ", "english": "rain"}, {"japanese": "おてん気", "reading": "おてんき", "english": "weather"}, {"japanese": "かぜ", "reading": "かぜ", "english": "wind"}, {"japanese": "きおん", "reading": "きおん", "english": "temperature"}, {"japanese": "さむい", "reading": "さむい", "english": "cold"}, {"japanese": "たいふう", "reading": "たいふう", "english": "typhoon"}, {"japanese": "はれ", "reading": "はれ", "english": "fine weather"}, {"japanese": "ふる", "reading": "ふる", "english": "to fall (snow, rain)"}, {"japanese": "むしあつい", "reading": "むしあつい", "english": "Humid"}, {"japanese": "ゆき", "reading": "ゆき", "english": "snow"}, {"japanese": "冬", "reading": "ふゆ", "english": "winter"}, {"japanese": "夏", "reading": "なつ", "english": "summer"}, {"japanese": "春", "reading": "はる", "english": "spring"}, {"japanese": "秋", "reading": "あき", "english": "autumn"}]}, {"section": "Holiday / Travel", "words": [{"japanese": "アフリカ", "reading": "アフリカ", "english": "Africa"}, {"japanese": "アメリカ", "reading": "アメリカ", "english": "America"}, {"japanese": "アメリカン", "reading": "アメリカン", "english": "American"}, {"japanese": "おみやげ", "reading": "おみやげ", "english": "souvenir"}, {"japanese": "がいこく", "reading": "がいこく", "english": "overseas"}, {"japanese": "がい国", "reading": "がいこく", "english": "foreign country"}, {"japanese": "がい国人", "reading": "がい国人", "english": "foreigner"}, {"japanese": "かんこう", "reading": "かんこう", "english": "sightseeing, tourism"}, {"japanese": "かんこうきゃく", "reading": "かんこうきゃく", "english": "tourist"}, {"japanese": "かん国", "reading": "かんこく", "english": "Korean"}, {"japanese": "けいけん", "reading": "けいけん", "english": "experience"}, {"japanese": "ゲスト", "reading": "ゲスト", "english": "guest"}, {"japanese": "サービス", "reading": "サービス", "english": "service"}, {"japanese": "さく", "reading": "さく", "english": "bloom"}, {"japanese": "すごす", "reading": "すごす", "english": "spend"}, {"japanese": "スペイン", "reading": "スペイン", "english": "spain"}, {"japanese": "せかい", "reading": "せかい", "english": "world"}, {"japanese": "せかい中", "reading": "せかいじゅう", "english": "around the world"}, {"japanese": "たのしみ", "reading": "たのしみ", "english": "to look forward to"}, {"japanese": "たぶんかしゅぎ", "reading": "たぶんかしゅぎ", "english": "multiculturalism"}, {"japanese": "ツアー", "reading": "ツアー", "english": "tour"}, {"japanese": "つく", "reading": "つく", "english": "to arrive"}, {"japanese": "つれていく", "reading": "つれていく", "english": "to take someone"}, {"japanese": "てがみ", "reading": "てがみ", "english": "letter"}, {"japanese": "ニュージーランド", "reading": "ニュージーランド", "english": "New Zealand"}, {"japanese": "ニューヨーク", "reading": "ニューヨーク", "english": "Ney York"}, {"japanese": "ビザ", "reading": "ビザ", "english": "visa"}, {"japanese": "ホームステイ", "reading": "ホームステイ", "english": "home stay"}, {"japanese": "ホリデー", "reading": "ホリデー", "english": "holiday"}, {"japanese": "メール", "reading": "メール", "english": "mail"}, {"japanese": "よてい", "reading": "よてい", "english": "plans, arrangement, schedule"}, {"japanese": "リゾート", "reading": "リゾート", "english": "resort"}, {"japanese": "りょこうする", "reading": "りょこうする", "english": "to travel"}, {"japanese": "リラックス", "reading": "リラックス", "english": "relax"}, {"japanese": "人々", "reading": "ひとびと", "english": "people, each person"}, {"japanese": "人たち", "reading": "ひとたち", "english": "people"}, {"japanese": "休み", "reading": "やすみ", "english": "holiday, rest"}, {"japanese": "入口", "reading": "いりぐち", "english": "entrance"}, {"japanese": "出口", "reading": "でぐち", "english": "exit"}, {"japanese": "夏休み", "reading": "なつやすみ", "english": "summer holidays"}, {"japanese": "外国", "reading": "がいこく", "english": "over seas"}, {"japanese": "行き", "reading": "ゆき", "english": "bound for"}, {"japanese": "見える", "reading": "みえる", "english": "to be seen"}, {"japanese": "見つかる", "reading": "みつかる", "english": "to be found"}, {"japanese": "見つけた", "reading": "みつけた", "english": "to discover, to find"}]}, {"section": "Healthy Life (Sick)", "words": [{"japanese": "アレルギー", "reading": "アレルギー", "english": "allergy"}, {"japanese": "いたい", "reading": "いたい", "english": "pain,hurt"}, {"japanese": "おる", "reading": "おる", "english": "break"}, {"japanese": "かぜをひく", "reading": "かぜをひく", "english": "have a cold"}, {"japanese": "くすり", "reading": "くすり", "english": "medicine"}, {"japanese": "けんこう", "reading": "けんこう", "english": "health"}, {"japanese": "ひく", "reading": "ひく", "english": "get cold"}, {"japanese": "びょういん", "reading": "びょういん", "english": "hospital"}, {"japanese": "びょうき", "reading": "びょうき", "english": "sick"}, {"japanese": "ほね", "reading": "ほね", "english": "bone"}]}, {"section": "Healthy Life(General)", "words": [{"japanese": "カロリー", "reading": "カロリー", "english": "calorie"}, {"japanese": "きかい", "reading": "きかい", "english": "machine"}, {"japanese": "けんこうてき", "reading": "けんこうてき", "english": "healthy, hygenic"}, {"japanese": "ふとる", "reading": "ふとる", "english": "to get fat"}, {"japanese": "ヘルシー", "reading": "ヘルシー", "english": "healthy"}, {"japanese": "ヨガ", "reading": "ヨガ", "english": "Yoga"}]}, {"section": "Directions", "words": [{"japanese": "あの", "reading": "あの", "english": "that"}, {"japanese": "うしろ", "reading": "うしろ", "english": "behind"}, {"japanese": "うんてんめんきょ", "reading": "うんてんめんきょ", "english": "drivers license"}, {"japanese": "かど", "reading": "かど", "english": "corner"}, {"japanese": "から", "reading": "から", "english": "from"}, {"japanese": "つれて行く", "reading": "つれて行く", "english": "to take someone (to some place);"}, {"japanese": "とちゅう", "reading": "とちゅう", "english": "on the way"}, {"japanese": "とまる", "reading": "とまる", "english": "to stop"}, {"japanese": "はし", "reading": "はし", "english": "bridge"}, {"japanese": "ほう", "reading": "ほう", "english": "direction, way"}, {"japanese": "まがる", "reading": "まがる", "english": "turn"}, {"japanese": "まつ", "reading": "まつ", "english": "wait"}, {"japanese": "まっすぐ", "reading": "まっすぐ", "english": "straight, direct"}, {"japanese": "まで", "reading": "まで", "english": "until"}, {"japanese": "みち", "reading": "みち", "english": "road, path"}, {"japanese": "みなみ", "reading": "みなみ", "english": "south"}, {"japanese": "むかえに行く", "reading": "むかえに行く", "english": "to go to meet somebody"}, {"japanese": "もうすぐ", "reading": "もうすぐ", "english": "soon, before long"}, {"japanese": "もって行く", "reading": "もって行く", "english": "to take; to carry"}, {"japanese": "わたる", "reading": "わたる", "english": "to cross"}, {"japanese": "中", "reading": "なか", "english": "middle"}, {"japanese": "前", "reading": "まえ", "english": "before"}, {"japanese": "右", "reading": "みぎ", "english": "right"}, {"japanese": "右がわ", "reading": "みぎがわ", "english": "right side"}, {"japanese": "左", "reading": "ひだり", "english": "left"}, {"japanese": "左がわ", "reading": "ひだりがわ", "english": "left side"}]}, {"section": "Modes of Transport", "words": [{"japanese": "あるいて", "reading": "あるいて", "english": "walk"}, {"japanese": "オートバイ", "reading": "オートバイ", "english": "motor bike"}, {"japanese": "おりる", "reading": "おりる", "english": "to descend, to get off"}, {"japanese": "かかる", "reading": "かかる", "english": "to take (time, amount)"}, {"japanese": "ガソリン", "reading": "ガソリン", "english": "gasoline"}, {"japanese": "くうこう", "reading": "くうこう", "english": "airport"}, {"japanese": "くるま", "reading": "くるま", "english": "car"}, {"japanese": "じてん車", "reading": "じてんしゃ", "english": "bicycle"}, {"japanese": "しんかんせん", "reading": "しんかんせん", "english": "bullet train"}, {"japanese": "ストップ", "reading": "ストップ", "english": "stop"}, {"japanese": "タクシー", "reading": "タクシー", "english": "Taxi"}, {"japanese": "チケット", "reading": "チケット", "english": "Ticket"}, {"japanese": "でん車", "reading": "でんしゃ", "english": "train"}, {"japanese": "のりかえる", "reading": "のりかえる", "english": "change trains"}, {"japanese": "のりば", "reading": "のりば", "english": "place for boarding vechiles"}, {"japanese": "のる", "reading": "のる", "english": "to ride"}, {"japanese": "バス", "reading": "バス", "english": "bus"}, {"japanese": "バスてい", "reading": "バスてい", "english": "bus station"}, {"japanese": "はやい", "reading": "はやい", "english": "fast"}, {"japanese": "ひこうき", "reading": "ひこうき", "english": "plane"}, {"japanese": "ふね", "reading": "ふね", "english": "boat"}, {"japanese": "プラットホーム", "reading": "プラットホーム", "english": "platform"}, {"japanese": "ヘリコプター", "reading": "ヘリコプター", "english": "helicopter"}]}, {"section": "Places", "words": [{"japanese": "いなか", "reading": "いなか", "english": "country"}, {"japanese": "えいがかん", "reading": "えいがかん", "english": "Movie theater"}, {"japanese": "えき", "reading": "えき", "english": "station"}, {"japanese": "ばしょ", "reading": "ばしょ", "english": "place"}, {"japanese": "パリ", "reading": "パリ", "english": "Paris"}, {"japanese": "ハワイ", "reading": "ハワイ", "english": "Hawaii"}, {"japanese": "フランス", "reading": "フランス", "english": "France"}, {"japanese": "ヨーロッパ", "reading": "ヨーロッパ", "english": "Europe"}, {"japanese": "リオ", "reading": "リオ", "english": "Rio"}, {"japanese": "ロンドン", "reading": "ロンドン", "english": "London"}, {"japanese": "ワイキキ", "reading": "ワイキキ", "english": "Waikiki"}, {"japanese": "中国", "reading": "ちゅうごく", "english": "China"}, {"japanese": "中山", "reading": "なかやま", "english": "Nakayama"}, {"japanese": "中川", "reading": "なかがわ", "english": "Nakagawa"}, {"japanese": "中田", "reading": "なかだ", "english": "Nakada"}, {"japanese": "南アフリカ", "reading": "みなみアフリカ", "english": "South Africa"}, {"japanese": "川町", "reading": "かわまち", "english": "Kawamachi"}, {"japanese": "日本", "reading": "にほん", "english": "Japanese"}, {"japanese": "日本中", "reading": "にほんじゅう", "english": "through out Japan"}]}, {"section": "Places of Interest in Japan", "words": [{"japanese": "おきなわ", "reading": "おきなわ", "english": "Okinawa"}, {"japanese": "おしらせ", "reading": "おしらせ", "english": "notice, notification"}, {"japanese": "おてら", "reading": "おてら", "english": "temple"}, {"japanese": "おんせん", "reading": "おんせん", "english": "hot spring"}, {"japanese": "ぎんざ", "reading": "ぎんざ", "english": "Ginza"}, {"japanese": "こうべ", "reading": "こうべ", "english": "Kobe"}, {"japanese": "さんごしま", "reading": "さんごしま", "english": "Sangoshima"}, {"japanese": "しんじゅく", "reading": "しんじゅく", "english": "Shinjuku"}, {"japanese": "ながさき", "reading": "ながさき", "english": "Nagasaki"}, {"japanese": "にがた", "reading": "にがた", "english": "Nigata"}, {"japanese": "はこね", "reading": "はこね", "english": "Hakone"}, {"japanese": "はらじゅく", "reading": "はらじゅく", "english": "Harajuku"}, {"japanese": "ひろし", "reading": "ひろし", "english": "Hiroshi"}, {"japanese": "ふじ山", "reading": "ふじさん", "english": "Mt Fuji"}, {"japanese": "ブリスベン", "reading": "ブリスベン", "english": "Brisbane"}, {"japanese": "べっぷ", "reading": "べっぷ", "english": "Beppu"}, {"japanese": "よこはま", "reading": "よこはま", "english": "Yokohama"}, {"japanese": "九州", "reading": "きゅうしゅう", "english": "Kyushu"}, {"japanese": "京都", "reading": "きょうと", "english": "Kyoto"}, {"japanese": "北海道", "reading": "ほっかいどう", "english": "Hokaido"}, {"japanese": "大山", "reading": "おおやま", "english": "Ooyama"}, {"japanese": "大阪", "reading": "おおさか", "english": "Osaka"}, {"japanese": "広島", "reading": "ひろしま", "english": "Hiroshima"}, {"japanese": "本州", "reading": "ほんしゅう", "english": "Honshu"}, {"japanese": "東京", "reading": "とうきょう", "english": "Tokyo"}, {"japanese": "東山町", "reading": "とうやまちょう", "english": "Toyama Ciity"}, {"japanese": "海町", "reading": "うみまち", "english": "Umimachi"}, {"japanese": "田町", "reading": "たまち", "english": "Tamachi"}, {"japanese": "長野", "reading": "ながの", "english": "Nagano"}, {"japanese": "高山", "reading": "たかやま", "english": "Takayama"}]}, {"section": "Tickets", "words": [{"japanese": "きっぷ", "reading": "きっぷ", "english": "ticket"}]}, {"section": "Accommodation", "words": [{"japanese": "ホテル", "reading": "ホテル", "english": "hotel"}, {"japanese": "みんしゅく", "reading": "みんしゅく", "english": "Home Hostel"}, {"japanese": "ユースホステル", "reading": "ユースホステル", "english": "youth hostel"}, {"japanese": "よやくする", "reading": "よやくする", "english": "to reserve"}, {"japanese": "りょかん", "reading": "りょかん", "english": "Traditional Inn"}, {"japanese": "泊まる", "reading": "とまる", "english": "to stay"}]}, {"section": "Occupation", "words": [{"japanese": "アドバイス", "reading": "アドバイス", "english": "advice"}, {"japanese": "アルバイト", "reading": "アルバイト", "english": "part time job"}, {"japanese": "アンケート", "reading": "アンケート", "english": "survey"}, {"japanese": "いしゃ", "reading": "いしゃ", "english": "doctor"}, {"japanese": "インタビュー", "reading": "インタビュー", "english": "interview"}, {"japanese": "ウエーター", "reading": "ウエーター", "english": "waiter"}, {"japanese": "ウェイトレス", "reading": "ウェイトレス", "english": "waitress"}, {"japanese": "ウェブデサイン", "reading": "ウェブデサイン", "english": "web design"}, {"japanese": "エンジニア", "reading": "エンジニア", "english": "Engineer"}, {"japanese": "オーナー", "reading": "オーナー", "english": "Owner"}, {"japanese": "おうぼする", "reading": "おうぼする", "english": "apply, subscription"}, {"japanese": "かいしゃ", "reading": "かいしゃ", "english": "company"}, {"japanese": "かしゅ", "reading": "かしゅ", "english": "singer"}, {"japanese": "カスタムデザイン", "reading": "カスタムデザイン", "english": "custom design"}, {"japanese": "かんごふ", "reading": "かんごふ", "english": "nurse"}, {"japanese": "キャリア", "reading": "キャリア", "english": "career"}, {"japanese": "キャリア・アドバイザー", "reading": "キャリア・アドバイザー", "english": "carrers advicor"}, {"japanese": "きゅうりょう", "reading": "きゅうりょう", "english": "salary"}, {"japanese": "けいさつ", "reading": "けいさつ", "english": "police"}, {"japanese": "コミュニケーション", "reading": "コミュニケーション", "english": "communiucations"}, {"japanese": "コメント", "reading": "コメント", "english": "comment"}, {"japanese": "ざんねん", "reading": "ざんねん", "english": "regret"}, {"japanese": "しごと", "reading": "しごと", "english": "job"}, {"japanese": "しゃちょう", "reading": "しゃちょう", "english": "company president"}, {"japanese": "しょう来", "reading": "しょうらい", "english": "future"}, {"japanese": "スタッフ", "reading": "スタッフ", "english": "staff"}, {"japanese": "はいゆう", "reading": "はいゆう", "english": "actor"}, {"japanese": "パイロット", "reading": "パイロット", "english": "pilot"}, {"japanese": "ハウスシッター", "reading": "ハウスシッター", "english": "House Sitter"}, {"japanese": "はたらく", "reading": "はたらく", "english": "to work"}, {"japanese": "びようし", "reading": "びようし", "english": "beautician, hairdresser"}, {"japanese": "べんごし", "reading": "べんごし", "english": "lawyer"}, {"japanese": "ぼしゅう", "reading": "ぼしゅう", "english": "Recruitment"}, {"japanese": "ボス", "reading": "ボス", "english": "boss"}, {"japanese": "ボランティア", "reading": "ボランティア", "english": "Voluenteer"}, {"japanese": "ゆうめい", "reading": "ゆうめい", "english": "famous"}, {"japanese": "ゆめ", "reading": "ゆめ", "english": "dream"}, {"japanese": "会", "reading": "かい", "english": "meeting"}, {"japanese": "先生", "reading": "せんせい", "english": "teacher"}]}, {"section": "Future General", "words": [{"japanese": "いけん", "reading": "いけん", "english": "opinion"}, {"japanese": "いつでも", "reading": "いつでも", "english": "any time, at all times"}, {"japanese": "つとめる", "reading": "つとめる", "english": "to be employed"}, {"japanese": "つもり", "reading": "つもり", "english": "intend"}, {"japanese": "デート", "reading": "デート", "english": "date"}, {"japanese": "デートブログ", "reading": "デートブログ", "english": "date blog"}, {"japanese": "ニュース", "reading": "ニュース", "english": "news"}, {"japanese": "はらう", "reading": "はらう", "english": "to pay"}, {"japanese": "ふえる", "reading": "ふえる", "english": "to increase"}, {"japanese": "へる", "reading": "へる", "english": "to decrease"}, {"japanese": "ほうりつ", "reading": "ほうりつ", "english": "law"}, {"japanese": "ほか", "reading": "ほか", "english": "other"}, {"japanese": "めんきょ", "reading": "めんきょ", "english": "license"}, {"japanese": "りゆう", "reading": "りゆう", "english": "reason"}, {"japanese": "わかい人", "reading": "わかい人", "english": "young person"}]}, {"section": "Culture", "words": [{"japanese": "アイヌ", "reading": "アイヌ", "english": "Ainu . Aboriginal"}, {"japanese": "あのね", "reading": "あのね", "english": "look here"}, {"japanese": "いけばな", "reading": "いけばな", "english": "flower arrangement"}, {"japanese": "おぼん", "reading": "おぼん", "english": "Obon"}, {"japanese": "さどう", "reading": "さどう", "english": "Tea ceremony"}, {"japanese": "しょどう", "reading": "しょどう", "english": "calligraphy"}, {"japanese": "すみません", "reading": "すみません", "english": "sorry"}, {"japanese": "ていねい", "reading": "ていねい", "english": "polite"}, {"japanese": "でんとうてき", "reading": "でんとうてき", "english": "traditional"}, {"japanese": "にんじゃ", "reading": "にんじゃ", "english": "ninja"}, {"japanese": "はなび", "reading": "はなび", "english": "fireworks"}, {"japanese": "ぶんか", "reading": "ぶんか", "english": "culture"}, {"japanese": "ぶんかさい", "reading": "ぶんかさい", "english": "cultural stival"}, {"japanese": "まつり", "reading": "まつり", "english": "stival"}, {"japanese": "ロボット", "reading": "ロボット", "english": "robot"}]}, {"section": "Japanese Names", "words": [{"japanese": "あきら", "reading": "あきら", "english": "akira"}, {"japanese": "あさひ", "reading": "あさひ", "english": "Asahi"}, {"japanese": "アナ", "reading": "アナ", "english": "Anna"}, {"japanese": "いずみさん", "reading": "いずみさん", "english": "Izumi"}, {"japanese": "えみ", "reading": "えみ", "english": "Emi"}, {"japanese": "エミリ", "reading": "エミリ", "english": "Emily"}, {"japanese": "かずみ", "reading": "かずみ", "english": "kazumi"}, {"japanese": "くみ子", "reading": "くみこ", "english": "Kumiko"}, {"japanese": "クリス", "reading": "クリス", "english": "Kris"}, {"japanese": "けいこ", "reading": "けいこ", "english": "Keiko"}, {"japanese": "さちこ", "reading": "さちこ", "english": "Sachiko"}, {"japanese": "さとし", "reading": "さとし", "english": "Satoshi"}, {"japanese": "サリー", "reading": "サリー", "english": "Sally"}, {"japanese": "じゅんこ", "reading": "じゅんこ", "english": "Junko"}, {"japanese": "ジョン", "reading": "ジョン", "english": "john"}, {"japanese": "スミス", "reading": "スミス", "english": "Smith"}, {"japanese": "セーラ", "reading": "セーラ", "english": "Sarah"}, {"japanese": "たか子", "reading": "たか子", "english": "Takako"}, {"japanese": "たけ山", "reading": "たけ山", "english": "Takeyama"}, {"japanese": "ちひろ", "reading": "ちひろ", "english": "Chihiro"}, {"japanese": "トム", "reading": "トム", "english": "Tom"}, {"japanese": "とも子", "reading": "とも子", "english": "Tomoko"}, {"japanese": "のみさん", "reading": "のみさん", "english": "Nomi"}, {"japanese": "はな子", "reading": "はな子", "english": "Hanako"}, {"japanese": "まさお", "reading": "まさお", "english": "Masao"}, {"japanese": "まさき", "reading": "まさき", "english": "Masaki"}, {"japanese": "みえ", "reading": "みえ", "english": "Mie"}, {"japanese": "みち子", "reading": "みち子", "english": "Michiko"}, {"japanese": "みな子", "reading": "みな子", "english": "Minako"}, {"japanese": "めぐみ", "reading": "めぐみ", "english": "Megumi"}, {"japanese": "ゆうこ", "reading": "ゆうこ", "english": "Yuko"}, {"japanese": "ゆみ", "reading": "ゆみ", "english": "Yumi"}, {"japanese": "ゆみ子", "reading": "ゆみこ", "english": "Yumiko"}, {"japanese": "よう子", "reading": "よう子", "english": "Yooko"}, {"japanese": "リサ", "reading": "リサ", "english": "Lisa"}, {"japanese": "るみ子", "reading": "るみ子", "english": "Rumiko"}, {"japanese": "上田", "reading": "上田", "english": "Ueda"}, {"japanese": "山下", "reading": "やました", "english": "Yamashita"}, {"japanese": "山中", "reading": "やまなか", "english": "Yamanaka"}, {"japanese": "山川", "reading": "やまかわ", "english": "Yamakawa"}, {"japanese": "山本", "reading": "やまもと", "english": "Yamamoto"}, {"japanese": "山田", "reading": "やまだ", "english": "Yamada"}, {"japanese": "本田", "reading": "ほんだ", "english": "Honda (surname)"}, {"japanese": "田中", "reading": "たなか", "english": "Tanaka"}, {"japanese": "秋子", "reading": "あきこ", "english": "Akiko"}, {"japanese": "ひろみ", "reading": "ひろみ", "english": "Hiromi"}]}, {"section": "Counters", "words": [{"japanese": "10 分", "reading": "じゅっぷん", "english": "10 Minutes"}, {"japanese": "２まい", "reading": "にまい", "english": "flat counter"}, {"japanese": "２時半", "reading": "にじはん", "english": "2:30"}, {"japanese": "３かい", "reading": "さんかい", "english": "3rd floor"}, {"japanese": "３ぱく", "reading": "さんぱく", "english": "3 day stay"}, {"japanese": "３回", "reading": "さんかい", "english": "3rd time"}, {"japanese": "5分", "reading": "ごふん", "english": "5 minutes"}, {"japanese": "５才", "reading": "ごさい", "english": "5 years old"}, {"japanese": "いちばん", "reading": "いちばん", "english": "Number one"}, {"japanese": "さんねん", "reading": "三年", "english": "3 years"}, {"japanese": "さんびき", "reading": "さんびき", "english": "3 small animals"}, {"japanese": "ドル", "reading": "ドル", "english": "dollar"}, {"japanese": "ニキロ", "reading": "ニキロ", "english": "2 kilometers"}, {"japanese": "ニリットル", "reading": "ニリットル", "english": "2 liters"}, {"japanese": "リットル", "reading": "リットル", "english": "litre"}, {"japanese": "一ヶ月", "reading": "いっかげつ", "english": "one month"}, {"japanese": "一つ", "reading": "ひとつ", "english": "one thing"}, {"japanese": "一年間", "reading": "一年間", "english": "one year period"}, {"japanese": "一日", "reading": "いちにち", "english": "one day. all day, first day"}, {"japanese": "一日中", "reading": "いちにちじゅう", "english": "all day long"}, {"japanese": "七時", "reading": "しちじ", "english": "7 O'clock"}, {"japanese": "三かい", "reading": "三かい", "english": "3 times"}, {"japanese": "三つ目", "reading": "三つ目", "english": "3rd"}, {"japanese": "三ど", "reading": "三ど", "english": "3 degrees"}, {"japanese": "三人", "reading": "さんにん", "english": "3 People / People counter"}, {"japanese": "三百本", "reading": "三百本", "english": "300 long things"}, {"japanese": "九月", "reading": "くがつ", "english": "September"}, {"japanese": "二キロ", "reading": "二キロ", "english": "2 kilo"}, {"japanese": "二つ目", "reading": "二つ目", "english": "2nd day"}, {"japanese": "二人", "reading": "ふたり", "english": "two people"}, {"japanese": "二十ドル", "reading": "二十ドル", "english": "20 dollars"}, {"japanese": "二日間", "reading": "ふつかかん", "english": "2 day period"}, {"japanese": "二週間", "reading": "にしゅうかん", "english": "2 week period"}, {"japanese": "何", "reading": "なに・なん", "english": "what"}, {"japanese": "何分", "reading": "なんぷん", "english": "How many minutes"}, {"japanese": "何才", "reading": "なんさい", "english": "what age"}, {"japanese": "四がっき", "reading": "よんがっき", "english": "4th term"}, {"japanese": "四つ", "reading": "よっつ", "english": "four things"}, {"japanese": "年生", "reading": "ねんせい", "english": "grade"}, {"japanese": "才", "reading": "さい", "english": "age, genius"}, {"japanese": "日", "reading": "ひ・にち", "english": "day,sun"}, {"japanese": "百", "reading": "ひゃく", "english": "100"}, {"japanese": "百メートル", "reading": "ひゃくメートル", "english": "100 meters"}]}, {"section": "Essay", "words": [{"japanese": "ええと", "reading": "ええと", "english": "err...., uhhh,"}, {"japanese": "きじ", "reading": "きじ", "english": "article"}, {"japanese": "さいきん", "reading": "さいきん", "english": "recently"}, {"japanese": "さいご", "reading": "さいご", "english": "end, conclusion"}, {"japanese": "さいこう", "reading": "さいこう", "english": "highest, supreme"}, {"japanese": "さいしょ", "reading": "さいしょ", "english": "beginning, first"}, {"japanese": "さいてい", "reading": "さいてい", "english": "least, lowest"}, {"japanese": "しかし", "reading": "しかし", "english": "however"}, {"japanese": "すぐ", "reading": "すぐ", "english": "immediately"}, {"japanese": "ぜったい", "reading": "ぜったい", "english": "definitely"}, {"japanese": "ぜひ", "reading": "ぜひ", "english": "without fail"}, {"japanese": "ぜんぶ", "reading": "ぜんぶ", "english": "all"}, {"japanese": "そう", "reading": "そう", "english": "thus"}, {"japanese": "そこで", "reading": "そこで", "english": "so, accordingly"}, {"japanese": "そして", "reading": "そして", "english": "and then,"}, {"japanese": "その", "reading": "その", "english": "that"}, {"japanese": "そのあと", "reading": "そのあと", "english": "after that"}, {"japanese": "そのほか", "reading": "そのほか", "english": "in addition"}, {"japanese": "その時", "reading": "そのとき", "english": "that time"}, {"japanese": "それに", "reading": "それに", "english": "moreover, in addition"}, {"japanese": "そろそろ", "reading": "そろそろ", "english": "slowly, gradually"}, {"japanese": "だから", "reading": "だから", "english": "because"}, {"japanese": "たとえば", "reading": "たとえば", "english": "example"}, {"japanese": "たぶん", "reading": "たぶん", "english": "maybe"}, {"japanese": "ついて", "reading": "ついて", "english": "regarding, about. concering"}, {"japanese": "つぎ", "reading": "つぎ", "english": "next"}, {"japanese": "でも", "reading": "でも", "english": "but"}, {"japanese": "どう", "reading": "どう", "english": "how"}, {"japanese": "どうした", "reading": "どうした", "english": "what happened"}, {"japanese": "どうしたらいい", "reading": "どうしたらいい", "english": "what's the best thing to do"}, {"japanese": "どうして", "reading": "どうして", "english": "why"}, {"japanese": "どうぞ", "reading": "どうぞ", "english": "please, by all means, you are welcome"}, {"japanese": "どうやって", "reading": "どうやって", "english": "how?"}, {"japanese": "どんな", "reading": "どんな", "english": "what kind of"}, {"japanese": "ビッグママ", "reading": "ビッグママ", "english": "big mama"}, {"japanese": "へんじする", "reading": "へんじする", "english": "to reply"}, {"japanese": "ほとんど", "reading": "ほとんど", "english": "mostly, nearly"}, {"japanese": "ほんとう", "reading": "ほんとう", "english": "really"}, {"japanese": "また", "reading": "また", "english": "again, once more"}, {"japanese": "まだ", "reading": "まだ", "english": "not yet, still, unfiinshed"}, {"japanese": "まだまだ", "reading": "まだまだ", "english": "still more to come"}, {"japanese": "まで", "reading": "まで", "english": "untl"}, {"japanese": "もちろん", "reading": "もちろん", "english": "of course"}, {"japanese": "もっと", "reading": "もっと", "english": "lots"}, {"japanese": "りょう", "reading": "りょう", "english": "amount, volume"}, {"japanese": "所で", "reading": "所で", "english": "by the way"}]}];
+// Immutable original for reset
+const ORIG_VOCAB_DATA = JSON.parse(JSON.stringify(VOCAB_DATA));
+// ============================================================
+//  APP MODE
+// ============================================================
+let appMode = 'teacher'; // 'teacher' | 'student'
+
+function switchMode(mode) {
+  appMode = mode;
+  document.getElementById('teacherBtn').classList.toggle('mode-active', mode === 'teacher');
+  document.getElementById('studentBtn').classList.toggle('mode-active', mode === 'student');
+  document.getElementById('editorBtn').classList.toggle('mode-active', mode === 'editor');
+  document.getElementById('teacherPanel').style.display = mode === 'teacher' ? '' : 'none';
+  document.getElementById('studentPanel').style.display = mode === 'student' ? '' : 'none';
+  document.getElementById('editorPanel').style.display = mode === 'editor' ? '' : 'none';
+  if (mode !== 'teacher') document.getElementById('previewSection').classList.remove('visible');
+  if (mode === 'student') renderStudentPanel();
+  if (mode === 'editor' && !editorUnlocked) {
+    document.getElementById('passwordGate').style.display = '';
+    document.getElementById('editorMain').style.display = 'none';
+    setTimeout(() => document.getElementById('pwInput').focus(), 100);
+  }
+}
+
+// ============================================================
+//  STATE
+// ============================================================
+let selectedWeek = new Set();
+let selectedReview = new Set();
+
+// ============================================================
+//  INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  renderSectionGrid();
+  const today = new Date();
+  document.getElementById('testDate').value = today.toISOString().split('T')[0];
+});
+
+function renderSectionGrid() {
+  const grid = document.getElementById('sectionGrid');
+  grid.innerHTML = '';
+  VOCAB_DATA.forEach((sec, idx) => {
+    const chip = document.createElement('div');
+    chip.className = 'section-chip' + (selectedWeek.has(idx) ? ' active' : '');
+    chip.innerHTML = `<div class="check-dot"></div><span>${sec.section}</span><span class="chip-count">${sec.words.length}</span>`;
+    chip.onclick = () => toggleWeek(idx);
+    grid.appendChild(chip);
+  });
+  updateWeekStatus();
+}
+
+function toggleWeek(idx) {
+  if (selectedWeek.has(idx)) {
+    selectedWeek.delete(idx);
+    selectedReview.delete(idx);
+  } else {
+    selectedWeek.add(idx);
+  }
+  renderSectionGrid();
+  renderReviewGrid();
+}
+
+function updateWeekStatus() {
+  const total = [...selectedWeek].reduce((s, i) => s + VOCAB_DATA[i].words.length, 0);
+  const el = document.getElementById('weekStatus');
+  el.textContent = selectedWeek.size === 0 ? 'No lists selected' :
+    `${selectedWeek.size} list${selectedWeek.size > 1 ? 's' : ''} selected · ${total} words`;
+  el.className = total >= 20 ? 'status-text' : (selectedWeek.size > 0 ? 'status-text warn' : 'status-text');
+  document.getElementById('generateBtn').disabled = selectedWeek.size === 0;
+}
+
+function selectAll() { VOCAB_DATA.forEach((_, i) => selectedWeek.add(i)); renderSectionGrid(); renderReviewGrid(); }
+function clearAll() { selectedWeek.clear(); selectedReview.clear(); renderSectionGrid(); renderReviewGrid(); }
+
+function renderReviewGrid() {
+  const grid = document.getElementById('reviewGrid');
+  if (selectedWeek.size === 0) {
+    grid.innerHTML = '<div style="font-size:0.8rem;color:#aaa;font-style:italic;">Select this week\'s lists first to see review options.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  VOCAB_DATA.forEach((sec, idx) => {
+    if (selectedWeek.has(idx)) return;
+    const chip = document.createElement('div');
+    chip.className = 'review-chip' + (selectedReview.has(idx) ? ' active' : '');
+    chip.innerHTML = `<span class="rc-dot"></span><span>${sec.section}</span><span class="chip-count">${sec.words.length}</span>`;
+    chip.onclick = () => {
+      selectedReview.has(idx) ? selectedReview.delete(idx) : selectedReview.add(idx);
+      renderReviewGrid();
+    };
+    grid.appendChild(chip);
+  });
+}
+
+// ============================================================
+//  LAYOUT
+// ============================================================
+let currentLayout = 'portrait';
+
+function setLayout(mode) {
+  currentLayout = mode;
+  document.querySelectorAll('.layout-opt').forEach(el => {
+    el.classList.toggle('active', el.querySelector('input').value === mode);
+  });
+  if (document.getElementById('previewSection').classList.contains('visible')) {
+    generateTest();
+  }
+}
+
+// ============================================================
+//  GENERATE TEST
+// ============================================================
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function pickRandom(arr, n) {
+  return shuffle([...arr]).slice(0, Math.min(n, arr.length));
+}
+
+// Store last generated questions for answer key
+let lastJpQs = [], lastEnQs = [];
+
+function generateTest() {
+  if (selectedWeek.size === 0) {
+    document.getElementById('generateStatus').textContent = '⚠ Please select at least one list first.';
+    document.getElementById('generateStatus').className = 'status-text warn';
+    return;
+  }
+
+  const reviewCount = Math.min(20, Math.max(0, parseInt(document.getElementById('reviewCount').value) || 0));
+  const doShuffle = document.getElementById('shuffleCheck').checked;
+  const dateVal = document.getElementById('testDate').value;
+  const dateStr = dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('en-AU', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) : 'Monday';
+
+  let weekWords = [];
+  selectedWeek.forEach(i => weekWords.push(...VOCAB_DATA[i].words));
+  let reviewWords = [];
+  selectedReview.forEach(i => reviewWords.push(...VOCAB_DATA[i].words));
+
+  const weekJapaneseSet = new Set(weekWords.map(w => w.japanese));
+  reviewWords = reviewWords.filter(w => !weekJapaneseSet.has(w.japanese));
+
+  const actualReview = Math.min(reviewCount, reviewWords.length);
+  const weekNeeded = 20 - actualReview;
+
+  if (weekWords.length < weekNeeded) {
+    document.getElementById('generateStatus').textContent =
+      `⚠ Not enough words (have ${weekWords.length + reviewWords.length}, need 20). Add more lists.`;
+    document.getElementById('generateStatus').className = 'status-text warn';
+    return;
+  }
+
+  document.getElementById('generateStatus').textContent = '';
+
+  const chosenReview = pickRandom(reviewWords, actualReview);
+  const chosenWeek = pickRandom(weekWords, weekNeeded);
+  let allWords = [...chosenWeek, ...chosenReview];
+  if (doShuffle) allWords = shuffle(allWords);
+
+  lastJpQs = allWords.slice(0, 10).map(w => ({...w, isMC: false}));
+  lastEnQs = allWords.slice(10, 20).map(w => ({...w, isMC: false}));
+
+  const weekListNames = [...selectedWeek].map(i => VOCAB_DATA[i].section).join(', ');
+  const reviewListNames = selectedReview.size > 0 ? [...selectedReview].map(i => VOCAB_DATA[i].section).join(', ') : null;
+
+  const sheet = document.getElementById('testSheet');
+
+  function buildTestCopy(showAnswers) {
+    return `
+    <div class="sheet-head${showAnswers ? ' answer-key-mode' : ''}">
+      ${showAnswers ? '<div class="answer-key-banner">✦ ANSWER KEY — TEACHER COPY ✦</div>' : ''}
+      <div class="sheet-title-row">
+        <div>
+          <div class="sheet-title">日本語テスト${showAnswers ? ' — 答え合わせ' : ''}</div>
+          <div class="sheet-title-en">Japanese Vocabulary Test${showAnswers ? ' — Answer Key' : ''}</div>
+        </div>
+        ${!showAnswers ? `<div class="sheet-meta">
+          <div class="meta-line">Name: <span class="meta-blank"></span></div>
+        </div>` : `<div class="sheet-meta">
+          <div class="meta-line" style="font-weight:bold;color:#c0392b;">Teacher Copy</div>
+          <div class="meta-line">${dateStr}</div>
+        </div>`}
+      </div>
+      <div class="sheet-info-row">
+        <span><span class="info-tag">DATE</span> ${dateStr}</span>
+        <span><span class="info-tag">LISTS</span> ${weekListNames}</span>
+        ${reviewListNames ? `<span><span class="info-tag">REVIEW</span> ${reviewListNames}</span>` : ''}
+        <span><span class="info-tag">TOTAL</span> /20</span>
+      </div>
+    </div>
+
+    <div class="sheet-body">
+
+
+      <div class="section-divider">Part A — Japanese → English (Q1–10)</div>
+      <p style="font-size:0.68rem; color:#666; margin-bottom:5px; font-style:italic;">${showAnswers ? 'Answers shown in red.' : 'Write the English meaning of each Japanese word.'}</p>
+      ${lastJpQs.map((w, i) => renderQuestion(i + 1, w, 'jp', showAnswers)).join('')}
+
+      <div class="section-divider">Part B — English → Japanese (Q11–20)</div>
+      <p style="font-size:0.68rem; color:#666; margin-bottom:5px; font-style:italic;">${showAnswers ? 'Answers shown in red.' : 'Write the Japanese word for each English meaning.'}</p>
+      ${lastEnQs.map((w, i) => renderQuestion(i + 11, w, 'en', showAnswers)).join('')}
+    </div>`;
+  }
+
+  const isDouble = currentLayout === 'double';
+
+  if (isDouble) {
+    sheet.innerHTML = `
+      <div class="test-wrapper" style="display:flex;width:100%;">
+        <div class="test-copy" style="width:50%;box-sizing:border-box;padding-right:10px;border-right:1.5px dashed #ccc;">
+          ${buildTestCopy(false)}
+        </div>
+        <div class="test-copy" style="width:50%;box-sizing:border-box;padding-left:10px;">
+          ${buildTestCopy(false)}
+        </div>
+      </div>
+    `;
+  } else {
+    sheet.innerHTML = buildTestCopy(false);
+  }
+
+  const previewEl = document.getElementById('previewSection');
+  previewEl.classList.toggle('print-double', isDouble);
+  previewEl.classList.add('visible');
+  previewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function printTest() {
+  const layout = currentLayout;
+  injectPageStyle(layout === 'double' || layout === 'landscape' ? 'landscape' : 'portrait');
+  // Print student test only
+  document.getElementById('answerKeySheet').style.display = 'none';
+  window.print();
+}
+
+function printAnswerKey() {
+  if (lastJpQs.length === 0) { alert('Generate a test first.'); return; }
+  // Build answer key sheet
+  const weekListNames = [...selectedWeek].map(i => VOCAB_DATA[i].section).join(', ');
+  const reviewListNames = selectedReview.size > 0 ? [...selectedReview].map(i => VOCAB_DATA[i].section).join(', ') : null;
+  const dateVal = document.getElementById('testDate').value;
+  const dateStr = dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('en-AU', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) : '';
+
+  const keySheet = document.getElementById('answerKeySheet');
+  keySheet.innerHTML = `
+    <div class="sheet-head answer-key-mode" style="page-break-before:always;">
+      <div class="answer-key-banner">✦ ANSWER KEY — TEACHER COPY ✦</div>
+      <div class="sheet-title-row">
+        <div>
+          <div class="sheet-title">日本語テスト — 答え合わせ</div>
+          <div class="sheet-title-en">Answer Key</div>
+        </div>
+        <div class="sheet-meta"><div class="meta-line" style="color:#c0392b;font-weight:bold;">Teacher Copy</div><div class="meta-line">${dateStr}</div></div>
+      </div>
+      <div class="sheet-info-row">
+        <span><span class="info-tag">LISTS</span> ${weekListNames}</span>
+        ${reviewListNames ? `<span><span class="info-tag">REVIEW</span> ${reviewListNames}</span>` : ''}
+      </div>
+    </div>
+    <div class="sheet-body">
+      <div class="section-divider">Part A — Japanese → English</div>
+      ${lastJpQs.map((w, i) => renderQuestion(i + 1, w, 'jp', true)).join('')}
+      <div class="section-divider">Part B — English → Japanese</div>
+      ${lastEnQs.map((w, i) => renderQuestion(i + 11, w, 'en', true)).join('')}
+    </div>
+  `;
+  keySheet.style.display = 'block';
+  injectPageStyle('portrait');
+  window.print();
+  setTimeout(() => { keySheet.style.display = 'none'; }, 1000);
+}
+
+function printBothTogether() {
+  if (lastJpQs.length === 0) { alert('Generate a test first.'); return; }
+  // Show answer key inline below test for printing
+  printAnswerKey();
+}
+
+function printTestWithKey() {
+  if (lastJpQs.length === 0) { alert('Generate a test first.'); return; }
+
+  const weekListNames = [...selectedWeek].map(i => VOCAB_DATA[i].section).join(', ');
+  const reviewListNames = selectedReview.size > 0 ? [...selectedReview].map(i => VOCAB_DATA[i].section).join(', ') : null;
+  const dateVal = document.getElementById('testDate').value;
+  const dateStr = dateVal ? new Date(dateVal + 'T00:00:00').toLocaleDateString('en-AU', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) : '';
+
+  const keySheet = document.getElementById('answerKeySheet');
+  keySheet.innerHTML = `
+    <div class="sheet-head answer-key-mode" style="page-break-before:always;">
+      <div class="answer-key-banner">✦ ANSWER KEY — TEACHER COPY ✦</div>
+      <div class="sheet-title-row">
+        <div>
+          <div class="sheet-title">日本語テスト — 答え合わせ</div>
+          <div class="sheet-title-en">Answer Key</div>
+        </div>
+        <div class="sheet-meta"><div class="meta-line" style="color:#c0392b;font-weight:bold;">Teacher Copy</div><div class="meta-line">${dateStr}</div></div>
+      </div>
+      <div class="sheet-info-row">
+        <span><span class="info-tag">LISTS</span> ${weekListNames}</span>
+        ${reviewListNames ? `<span><span class="info-tag">REVIEW</span> ${reviewListNames}</span>` : ''}
+      </div>
+    </div>
+    <div class="sheet-body">
+      <div class="section-divider">Part A — Japanese → English</div>
+      ${lastJpQs.map((w, i) => renderQuestion(i + 1, w, 'jp', true)).join('')}
+      <div class="section-divider">Part B — English → Japanese</div>
+      ${lastEnQs.map((w, i) => renderQuestion(i + 11, w, 'en', true)).join('')}
+    </div>
+  `;
+  keySheet.style.display = 'block';
+  injectPageStyle('portrait');
+  window.print();
+  setTimeout(() => { keySheet.style.display = 'none'; }, 1000);
+}
+
+function injectPageStyle(orientation) {
+  let el = document.getElementById('print-page-style');
+  if (el) el.remove();
+  const s = document.createElement('style');
+  s.id = 'print-page-style';
+  if (orientation === 'landscape') {
+    s.textContent = '@media print { @page { size: A4 landscape; margin: 8mm 10mm; } }';
+  } else {
+    s.textContent = '@media print { @page { size: A4 portrait; margin: 12mm 14mm; } }';
+  }
+  document.head.appendChild(s);
+}
+
+function renderQuestion(num, word, dir, showAnswer) {
+  const isJP = dir === 'jp';
+  const answer = isJP ? word.english : word.japanese;
+  const prompt = isJP
+    ? `<span class="jp-word">${word.japanese}</span>`
+    : `${word.english}`;
+
+  if (showAnswer) {
+    return `
+      <div class="question-row">
+        <div class="q-num">${num}.</div>
+        <div class="q-prompt">${prompt}</div>
+        <div class="q-answer-shown">${isJP ? answer : `<span class="jp-word" style="font-size:1rem;">${answer}</span>`}</div>
+      </div>`;
+  }
+  return `
+    <div class="question-row">
+      <div class="q-num">${num}.</div>
+      <div class="q-prompt">${prompt}</div>
+      <div class="q-answer-line"></div>
+    </div>`;
+}
+
+// ============================================================
+//  STUDENT MODE
+// ============================================================
+let studyMode = 'flashcard';
+let studyCards = [];
+let cardIndex = 0;
+let cardFlipped = false;
+let typingScore = { correct: 0, total: 0, attempted: 0 };
+let selfMarkAnswers = [];
+let selfMarkRevealed = false;
+
+function renderStudentPanel() {
+  renderStudentSectionPicker();
+  showStudyMode(studyMode);
+}
+
+function renderStudentSectionPicker() {
+  const grid = document.getElementById('studentSectionGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  VOCAB_DATA.forEach((sec, idx) => {
+    const chip = document.createElement('div');
+    chip.className = 'section-chip' + (studentSelected.has(idx) ? ' active' : '');
+    chip.innerHTML = `<div class="check-dot"></div><span>${sec.section}</span><span class="chip-count">${sec.words.length}</span>`;
+    chip.onclick = () => { studentSelected.has(idx) ? studentSelected.delete(idx) : studentSelected.add(idx); renderStudentSectionPicker(); };
+    grid.appendChild(chip);
+  });
+  const total = [...studentSelected].reduce((s, i) => s + VOCAB_DATA[i].words.length, 0);
+  const st = document.getElementById('studentStatus');
+  if (st) st.textContent = studentSelected.size === 0 ? 'No lists selected' : `${total} words from ${studentSelected.size} list${studentSelected.size > 1 ? 's' : ''}`;
+}
+
+let studentSelected = new Set();
+
+function studentSelectAll() { VOCAB_DATA.forEach((_, i) => studentSelected.add(i)); renderStudentSectionPicker(); }
+function studentClearAll() { studentSelected.clear(); renderStudentSectionPicker(); }
+
+function showStudyMode(mode) {
+  studyMode = mode;
+  ['flashcard','selfmark','browse'].forEach(m => {
+    const btn = document.getElementById('studyBtn_' + m);
+    if (btn) btn.classList.toggle('active', m === mode);
+    const panel = document.getElementById('study_' + m);
+    if (panel) panel.style.display = m === mode ? '' : 'none';
+  });
+  buildStudyCards();
+}
+
+function buildStudyCards() {
+  if (studentSelected.size === 0) {
+    studyCards = VOCAB_DATA.flatMap(s => s.words);
+  } else {
+    studyCards = [];
+    studentSelected.forEach(i => studyCards.push(...VOCAB_DATA[i].words));
+  }
+  studyCards = shuffle([...studyCards]);
+
+  if (studyMode === 'flashcard') initFlashcard();
+  else if (studyMode === 'selfmark') initSelfMark();
+  else if (studyMode === 'browse') initBrowse();
+}
+
+// ---- FLASHCARD ----
+function initFlashcard() {
+  cardIndex = 0; cardFlipped = false;
+  renderCard();
+}
+
+function renderCard() {
+  const area = document.getElementById('flashcard_area');
+  if (!area) return;
+  if (studyCards.length === 0) { area.innerHTML = '<p style="color:#888;text-align:center;">Select some lists above to start.</p>'; return; }
+  const card = studyCards[cardIndex];
+  const showJP = !cardFlipped; // Start with Japanese side up
+  area.innerHTML = `
+    <div class="flashcard${cardFlipped ? ' flipped' : ''}" onclick="flipCard()">
+      <div class="flashcard-inner">
+        <div class="flashcard-front">
+          <div class="fc-lang">Japanese</div>
+          <div class="fc-jp">${card.japanese}</div>
+          ${card.reading !== card.japanese ? `<div class="fc-reading">${card.reading}</div>` : ''}
+          <div class="fc-hint">tap to reveal ↓</div>
+        </div>
+        <div class="flashcard-back">
+          <div class="fc-lang">English</div>
+          <div class="fc-en">${card.english}</div>
+          <div class="fc-jp-small">${card.japanese}</div>
+          <div class="fc-hint">tap to flip back</div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-controls">
+      <button class="btn btn-outline" onclick="prevCard()" ${cardIndex === 0 ? 'disabled' : ''}>← Prev</button>
+      <span style="font-family:'Space Mono',monospace;font-size:0.8rem;color:#888;">${cardIndex + 1} / ${studyCards.length}</span>
+      <button class="btn btn-primary" onclick="nextCard()" ${cardIndex === studyCards.length - 1 ? 'disabled' : ''}>Next →</button>
+    </div>
+    <div style="text-align:center;margin-top:8px;">
+      <button class="btn btn-ghost" onclick="buildStudyCards()">🔀 Reshuffle</button>
+    </div>
+  `;
+}
+
+function flipCard() { cardFlipped = !cardFlipped; renderCard(); }
+function nextCard() { cardFlipped = false; cardIndex = Math.min(cardIndex + 1, studyCards.length - 1); renderCard(); }
+function prevCard() { cardFlipped = false; cardIndex = Math.max(cardIndex - 1, 0); renderCard(); }
+
+
+function renderTypingQ(idx) {
+  const area = document.getElementById('typing_area');
+  if (!area) return;
+  if (studyCards.length === 0) { area.innerHTML = '<p style="color:#888;text-align:center;">Select some lists above to start.</p>'; return; }
+  if (idx >= studyCards.length) {
+    area.innerHTML = `<div style="text-align:center;padding:40px;">
+      <div style="font-size:2.5rem;margin-bottom:12px;">${typingScore.correct >= typingScore.total * 0.8 ? '🎉' : '📚'}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:1.1rem;margin-bottom:8px;">
+        ${typingScore.correct} / ${typingScore.total} correct
+      </div>
+      <div style="font-size:0.85rem;color:#888;margin-bottom:24px;">${Math.round(typingScore.correct/typingScore.total*100)}% — ${typingScore.correct >= typingScore.total * 0.8 ? 'Great work!' : 'Keep practising!'}</div>
+      <button class="btn btn-primary" onclick="initTyping()">Try Again 🔀</button>
+    </div>`;
+    return;
+  }
+  const card = studyCards[idx];
+  const isJPtoEN = Math.random() < 0.5;
+  const prompt = isJPtoEN ? card.japanese : card.english;
+  const answer = isJPtoEN ? card.english : card.japanese;
+  const promptLabel = isJPtoEN ? 'What does this mean in English?' : 'Write this in Japanese:';
+
+  area.innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-family:'Space Mono',monospace;font-size:0.7rem;color:#888;text-transform:uppercase;margin-bottom:8px;">${promptLabel}</div>
+      <div class="typing-prompt">${isJPtoEN ? `<span class="jp-word" style="font-size:1.6rem;">${prompt}</span>` : `<span style="font-size:1.3rem;">${prompt}</span>`}</div>
+    </div>
+    <input type="text" id="typingInput" class="typing-input" placeholder="Type your answer..." 
+      onkeydown="if(event.key==='Enter')checkTyping('${answer.replace(/'/g, "\\'")}', ${idx}, ${isJPtoEN})"
+      autofocus>
+    <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
+      <button class="btn btn-primary" onclick="checkTyping('${answer.replace(/'/g, "\\'")}', ${idx}, ${isJPtoEN})">Check ✓</button>
+      <button class="btn btn-ghost" onclick="skipTyping('${answer.replace(/'/g, "\\'")}', ${idx})">Skip →</button>
+      <span style="font-family:'Space Mono',monospace;font-size:0.75rem;color:#888;margin-left:auto;">${idx + 1} / ${studyCards.length}</span>
+    </div>
+    <div id="typing_feedback" style="margin-top:12px;min-height:40px;"></div>
+  `;
+  document.getElementById('typingInput').focus();
+}
+
+function normalise(s) {
+  return s.trim().toLowerCase()
+    .replace(/[（）()【】「」『』、。！？!?,.]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function checkTyping(answer, idx, isJPtoEN) {
+  const input = document.getElementById('typingInput');
+  if (!input) return;
+  const userAnswer = input.value.trim();
+  if (!userAnswer) return;
+  input.disabled = true;
+  typingScore.total++;
+  typingScore.attempted++;
+  const correct = normalise(userAnswer) === normalise(answer);
+  if (correct) typingScore.correct++;
+  const fb = document.getElementById('typing_feedback');
+  fb.innerHTML = correct
+    ? `<div style="color:#27ae60;font-weight:bold;font-size:1rem;">✓ Correct!</div>`
+    : `<div style="color:#c0392b;font-weight:bold;font-size:1rem;">✗ Incorrect</div>
+       <div style="margin-top:4px;font-size:0.88rem;">Correct answer: <strong>${isJPtoEN ? answer : `<span class="jp-word">${answer}</span>`}</strong></div>`;
+  fb.innerHTML += `<div style="margin-top:10px;"><button class="btn btn-primary" onclick="renderTypingQ(${idx + 1})">Next →</button></div>`;
+}
+
+function skipTyping(answer, idx) {
+  typingScore.total++;
+  const area = document.getElementById('typing_area');
+  const fb = document.createElement('div');
+  fb.style.cssText = 'margin-top:12px;';
+  fb.innerHTML = `<div style="color:#888;font-size:0.88rem;">Skipped. Answer: <strong>${answer}</strong></div>
+    <div style="margin-top:8px;"><button class="btn btn-primary" onclick="renderTypingQ(${idx + 1})">Next →</button></div>`;
+  const inputEl = document.getElementById('typingInput');
+  if (inputEl) inputEl.disabled = true;
+  const existingFb = document.getElementById('typing_feedback');
+  if (existingFb) existingFb.replaceWith(fb);
+}
+
+// ---- SELF-MARK QUIZ ----
+function initSelfMark() {
+  selfMarkAnswers = studyCards.slice(0, 20).map(w => ({ word: w, revealed: false }));
+  selfMarkRevealed = false;
+  renderSelfMark();
+}
+
+function renderSelfMark() {
+  const area = document.getElementById('selfmark_area');
+  if (!area) return;
+  if (studyCards.length === 0) { area.innerHTML = '<p style="color:#888;text-align:center;">Select some lists above to start.</p>'; return; }
+
+  const jpHalf = selfMarkAnswers.slice(0, 10);
+  const enHalf = selfMarkAnswers.slice(10, 20);
+
+  area.innerHTML = `
+    <p style="font-size:0.82rem;color:#666;margin-bottom:16px;font-style:italic;">Cover the answers and write your responses on paper. Then click "Reveal Answers" to check.</p>
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="revealAllAnswers()">👁 Reveal All Answers</button>
+      <button class="btn btn-ghost" onclick="initSelfMark()">🔀 New Quiz</button>
+    </div>
+    <div class="sm-section">Part A — Japanese → English</div>
+    ${jpHalf.map((item, i) => `
+      <div class="sm-row" id="sm_${i}">
+        <div class="sm-num">${i + 1}.</div>
+        <div class="sm-prompt"><span class="jp-word">${item.word.japanese}</span></div>
+        <div class="sm-answer ${item.revealed ? 'revealed' : ''}" onclick="revealOne(${i})">${item.revealed ? item.word.english : '▒▒▒▒▒▒'}</div>
+      </div>`).join('')}
+    <div class="sm-section" style="margin-top:16px;">Part B — English → Japanese</div>
+    ${enHalf.map((item, i) => `
+      <div class="sm-row" id="sm_${i + 10}">
+        <div class="sm-num">${i + 11}.</div>
+        <div class="sm-prompt">${item.word.english}</div>
+        <div class="sm-answer ${item.revealed ? 'revealed' : ''}" onclick="revealOne(${i + 10})">${item.revealed ? `<span class="jp-word">${item.word.japanese}</span>` : '▒▒▒▒▒▒'}</div>
+      </div>`).join('')}
+  `;
+}
+
+function revealOne(i) {
+  selfMarkAnswers[i].revealed = true;
+  renderSelfMark();
+}
+
+function revealAllAnswers() {
+  selfMarkAnswers.forEach(a => a.revealed = true);
+  renderSelfMark();
+}
+
+// ---- BROWSE ----
+function initBrowse() {
+  const area = document.getElementById('browse_area');
+  if (!area) return;
+
+  const words = studyCards.length > 0 ? studyCards : VOCAB_DATA.flatMap(s => s.words);
+  const sections = studentSelected.size > 0
+    ? [...studentSelected].map(i => VOCAB_DATA[i])
+    : VOCAB_DATA;
+
+  area.innerHTML = `
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="browseSearch" placeholder="Search words..." 
+        style="padding:7px 12px;border:1.5px solid var(--border);border-radius:3px;font-size:0.88rem;width:220px;"
+        oninput="filterBrowse()">
+      <span style="font-size:0.78rem;color:#888;">${words.length} words</span>
+    </div>
+    <div id="browseTable">
+      ${sections.map(sec => `
+        <div class="browse-section-header">${sec.section}</div>
+        <div class="browse-grid">
+          ${sec.words.map(w => `
+            <div class="browse-row">
+              <div class="browse-jp"><span class="jp-word">${w.japanese}</span>${w.reading !== w.japanese ? `<div class="browse-reading">${w.reading}</div>` : ''}</div>
+              <div class="browse-en">${w.english}</div>
+            </div>`).join('')}
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+function filterBrowse() {
+  const q = document.getElementById('browseSearch').value.toLowerCase();
+  if (!q) { initBrowse(); return; }
+  const sections = studentSelected.size > 0
+    ? [...studentSelected].map(i => VOCAB_DATA[i])
+    : VOCAB_DATA;
+
+  const results = sections.flatMap(sec => sec.words.filter(w =>
+    w.japanese.toLowerCase().includes(q) ||
+    w.english.toLowerCase().includes(q) ||
+    w.reading.toLowerCase().includes(q)
+  ));
+
+  const table = document.getElementById('browseTable');
+  if (!table) return;
+  table.innerHTML = results.length === 0 ? '<p style="color:#888;font-style:italic;padding:12px;">No results found.</p>' :
+    `<div class="browse-grid">${results.map(w => `
+      <div class="browse-row">
+        <div class="browse-jp"><span class="jp-word">${w.japanese}</span>${w.reading !== w.japanese ? `<div class="browse-reading">${w.reading}</div>` : ''}</div>
+        <div class="browse-en">${w.english}</div>
+      </div>`).join('')}</div>`;
+}
+
+
+// ============================================================
+//  VOCAB EDITOR
+// ============================================================
+const TEACHER_PASSWORD_KEY = 'jp_teacher_password';
+const CUSTOM_VOCAB_KEY = 'jp_custom_vocab';
+let editorUnlocked = false;
+let editingVocab = null; // working copy of VOCAB_DATA
+
+function getPassword() {
+  return localStorage.getItem(TEACHER_PASSWORD_KEY) || 'sensei2024';
+}
+
+function checkPassword() {
+  const input = document.getElementById('pwInput').value;
+  if (input === getPassword()) {
+    editorUnlocked = true;
+    document.getElementById('passwordGate').style.display = 'none';
+    document.getElementById('editorMain').style.display = '';
+    initEditor();
+  } else {
+    document.getElementById('pwError').textContent = '✗ Incorrect password. Try again.';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+function lockEditor() {
+  editorUnlocked = false;
+  document.getElementById('passwordGate').style.display = '';
+  document.getElementById('editorMain').style.display = 'none';
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwError').textContent = '';
+  switchMode('teacher');
+}
+
+function showChangePassword() {
+  const panel = document.getElementById('changePwPanel');
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+}
+
+function saveNewPassword() {
+  const p1 = document.getElementById('newPw1').value.trim();
+  const p2 = document.getElementById('newPw2').value.trim();
+  const msg = document.getElementById('pwChangeMsg');
+  if (!p1) { msg.style.color = '#c0392b'; msg.textContent = 'Password cannot be empty.'; return; }
+  if (p1 !== p2) { msg.style.color = '#c0392b'; msg.textContent = 'Passwords do not match.'; return; }
+  localStorage.setItem(TEACHER_PASSWORD_KEY, p1);
+  msg.style.color = '#27ae60';
+  msg.textContent = '✓ Password changed successfully.';
+  document.getElementById('newPw1').value = '';
+  document.getElementById('newPw2').value = '';
+  setTimeout(() => { document.getElementById('changePwPanel').style.display = 'none'; msg.textContent = ''; }, 2000);
+}
+
+function initEditor() {
+  // Load custom vocab or clone original
+  const saved = localStorage.getItem(CUSTOM_VOCAB_KEY);
+  editingVocab = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(VOCAB_DATA));
+  populateSectionSelect();
+  loadEditorSection();
+}
+
+function populateSectionSelect() {
+  const sel = document.getElementById('editorSectionSelect');
+  sel.innerHTML = '';
+  editingVocab.forEach((sec, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${sec.section} (${sec.words.length} words)`;
+    sel.appendChild(opt);
+  });
+}
+
+function loadEditorSection() {
+  const idx = parseInt(document.getElementById('editorSectionSelect').value);
+  const sec = editingVocab[idx];
+  if (!sec) return;
+
+  const table = document.getElementById('editorWordTable');
+  if (sec.words.length === 0) {
+    table.innerHTML = '<p style="color:#aaa;font-style:italic;font-size:0.85rem;">No words in this list yet. Add some below.</p>';
+    return;
+  }
+
+  table.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+      <thead>
+        <tr style="background:var(--cream);font-family:'Space Mono',monospace;font-size:0.68rem;text-transform:uppercase;color:#888;">
+          <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);">#</th>
+          <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);">Japanese</th>
+          <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);">Reading</th>
+          <th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);">English</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:1px solid var(--border);">Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sec.words.map((w, wi) => `
+          <tr style="border-bottom:1px solid #f0ece4;" class="editor-row" id="row_${idx}_${wi}">
+            <td style="padding:5px 10px;color:#aaa;font-family:'Space Mono',monospace;font-size:0.7rem;">${wi + 1}</td>
+            <td style="padding:5px 10px;">
+              <input type="text" value="${w.japanese.replace(/"/g, '&quot;')}" 
+                style="border:none;background:transparent;font-family:'Noto Serif JP',serif;font-size:0.95rem;width:100%;cursor:text;"
+                onchange="updateWord(${idx},${wi},'japanese',this.value)"
+                onfocus="this.style.background='#fffbf5';this.style.border='1px solid var(--border)'"
+                onblur="this.style.background='transparent';this.style.border='none'">
+            </td>
+            <td style="padding:5px 10px;">
+              <input type="text" value="${w.reading.replace(/"/g, '&quot;')}"
+                style="border:none;background:transparent;font-family:'Noto Serif JP',serif;font-size:0.88rem;width:100%;"
+                onchange="updateWord(${idx},${wi},'reading',this.value)"
+                onfocus="this.style.background='#fffbf5';this.style.border='1px solid var(--border)'"
+                onblur="this.style.background='transparent';this.style.border='none'">
+            </td>
+            <td style="padding:5px 10px;">
+              <input type="text" value="${w.english.replace(/"/g, '&quot;')}"
+                style="border:none;background:transparent;font-size:0.85rem;width:100%;"
+                onchange="updateWord(${idx},${wi},'english',this.value)"
+                onfocus="this.style.background='#fffbf5';this.style.border='1px solid var(--border)'"
+                onblur="this.style.background='transparent';this.style.border='none'">
+            </td>
+            <td style="padding:5px 10px;text-align:center;">
+              <button onclick="deleteWord(${idx},${wi})" 
+                style="background:none;border:none;cursor:pointer;color:#ddd;font-size:1rem;transition:color 0.15s;"
+                onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#ddd'">✕</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function updateWord(secIdx, wordIdx, field, value) {
+  editingVocab[secIdx].words[wordIdx][field] = value;
+  markUnsaved();
+}
+
+function deleteWord(secIdx, wordIdx) {
+  if (!confirm(`Delete "${editingVocab[secIdx].words[wordIdx].japanese} — ${editingVocab[secIdx].words[wordIdx].english}"?`)) return;
+  editingVocab[secIdx].words.splice(wordIdx, 1);
+  loadEditorSection();
+  populateSectionSelect();
+  markUnsaved();
+}
+
+function addWord() {
+  const jp = document.getElementById('addJapanese').value.trim();
+  const reading = document.getElementById('addReading').value.trim();
+  const en = document.getElementById('addEnglish').value.trim();
+  const msg = document.getElementById('addWordMsg');
+
+  if (!jp || !en) { msg.textContent = '✗ Japanese and English fields are required.'; return; }
+
+  const idx = parseInt(document.getElementById('editorSectionSelect').value);
+  editingVocab[idx].words.push({
+    japanese: jp,
+    reading: reading || jp,
+    english: en
+  });
+
+  document.getElementById('addJapanese').value = '';
+  document.getElementById('addReading').value = '';
+  document.getElementById('addEnglish').value = '';
+  document.getElementById('addJapanese').focus();
+  msg.style.color = '#27ae60';
+  msg.textContent = `✓ Added "${jp}" to ${editingVocab[idx].section}`;
+  setTimeout(() => msg.textContent = '', 2500);
+
+  loadEditorSection();
+  populateSectionSelect();
+  markUnsaved();
+}
+
+function showNewSectionForm() {
+  const form = document.getElementById('newSectionForm');
+  form.style.display = form.style.display === 'none' ? '' : 'none';
+  if (form.style.display !== 'none') document.getElementById('newSectionName').focus();
+}
+
+function createNewSection() {
+  const name = document.getElementById('newSectionName').value.trim();
+  if (!name) { alert('Please enter a list name.'); return; }
+  if (editingVocab.find(s => s.section.toLowerCase() === name.toLowerCase())) {
+    alert('A list with that name already exists.'); return;
+  }
+  editingVocab.push({ section: name, words: [] });
+  document.getElementById('newSectionName').value = '';
+  document.getElementById('newSectionForm').style.display = 'none';
+  populateSectionSelect();
+  // Select the new section
+  const sel = document.getElementById('editorSectionSelect');
+  sel.value = editingVocab.length - 1;
+  loadEditorSection();
+  markUnsaved();
+}
+
+let unsavedChanges = false;
+function markUnsaved() {
+  unsavedChanges = true;
+  document.getElementById('saveMsg').textContent = '';
+}
+
+function saveVocabChanges() {
+  localStorage.setItem(CUSTOM_VOCAB_KEY, JSON.stringify(editingVocab));
+  // Apply to live VOCAB_DATA so tests and student mode use new words immediately
+  VOCAB_DATA.length = 0;
+  editingVocab.forEach(s => VOCAB_DATA.push(s));
+  // Re-render section grids
+  renderSectionGrid();
+  renderReviewGrid();
+  renderStudentSectionPicker();
+  unsavedChanges = false;
+  const msg = document.getElementById('saveMsg');
+  msg.textContent = '✓ Saved! Changes are live immediately.';
+  setTimeout(() => msg.textContent = '', 3000);
+}
+
+function resetToOriginal() {
+  if (!confirm('Reset ALL vocabulary to the original booklet? This will delete any custom words you have added.')) return;
+  localStorage.removeItem(CUSTOM_VOCAB_KEY);
+  editingVocab = JSON.parse(JSON.stringify(ORIG_VOCAB_DATA));
+  VOCAB_DATA.length = 0;
+  ORIG_VOCAB_DATA.forEach(s => VOCAB_DATA.push(JSON.parse(JSON.stringify(s))));
+  populateSectionSelect();
+  loadEditorSection();
+  renderSectionGrid();
+  renderReviewGrid();
+  renderStudentSectionPicker();
+  const msg = document.getElementById('saveMsg');
+  msg.style.color = '#c0392b';
+  msg.textContent = '↺ Reset to original booklet.';
+  setTimeout(() => { msg.textContent = ''; msg.style.color = '#27ae60'; }, 3000);
+}
+
+// Load any saved custom vocab on startup
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(CUSTOM_VOCAB_KEY);
+  if (saved) {
+    try {
+      const customVocab = JSON.parse(saved);
+      VOCAB_DATA.length = 0;
+      customVocab.forEach(s => VOCAB_DATA.push(s));
+    } catch(e) { localStorage.removeItem(CUSTOM_VOCAB_KEY); }
+  }
+}, true); // true = run before other DOMContentLoaded handlers
+
+</script>
+
+<!-- ================================================================ -->
+<!-- VOCAB EDITOR PANEL -->
+<!-- ================================================================ -->
+<div id="editorPanel" style="display:none;">
+
+<!-- Password gate -->
+<div class="card" id="passwordGate" style="max-width:420px;margin:0 auto;">
+  <div class="card-header">
+    <div class="step-badge" style="background:#b8860b;">🔒</div>
+    <h2>Teacher Access Required</h2>
+  </div>
+  <div class="card-body" style="text-align:center;padding:32px 28px;">
+    <p style="font-size:0.88rem;color:#666;margin-bottom:20px;">Enter the teacher password to edit vocabulary lists.</p>
+    <input type="password" id="pwInput" placeholder="Password"
+      style="padding:10px 14px;border:1.5px solid var(--border);border-radius:3px;font-size:1rem;width:100%;margin-bottom:12px;font-family:'Space Mono',monospace;"
+      onkeydown="if(event.key==='Enter')checkPassword()">
+    <button class="btn btn-primary" onclick="checkPassword()" style="width:100%;">Unlock →</button>
+    <div id="pwError" style="color:var(--red);font-size:0.8rem;margin-top:10px;min-height:18px;"></div>
+    <p style="font-size:0.72rem;color:#aaa;margin-top:16px;">Default password: <code>sensei2024</code><br>Change it in the editor settings.</p>
+  </div>
+</div>
+
+<!-- Editor (hidden until unlocked) -->
+<div id="editorMain" style="display:none;">
+
+<div class="card setup-card">
+  <div class="card-header" style="background:#fff8ee;">
+    <div class="step-badge" style="background:#b8860b;">✏</div>
+    <h2>Vocabulary Editor</h2>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="lockEditor()" style="font-size:0.68rem;">🔒 Lock</button>
+      <button class="btn btn-ghost" onclick="showChangePassword()" style="font-size:0.68rem;">🔑 Change Password</button>
+    </div>
+  </div>
+  <div class="card-body">
+
+    <!-- Change password panel -->
+    <div id="changePwPanel" style="display:none;background:#fff8ee;border:1.5px solid var(--gold);border-radius:3px;padding:14px 16px;margin-bottom:16px;">
+      <p style="font-size:0.82rem;font-weight:bold;margin-bottom:10px;">Change Password</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="password" id="newPw1" placeholder="New password" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:3px;font-size:0.85rem;width:160px;">
+        <input type="password" id="newPw2" placeholder="Confirm password" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:3px;font-size:0.85rem;width:160px;">
+        <button class="btn btn-primary" onclick="saveNewPassword()" style="padding:7px 14px;">Save</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('changePwPanel').style.display='none'">Cancel</button>
+      </div>
+      <div id="pwChangeMsg" style="font-size:0.78rem;margin-top:8px;min-height:16px;"></div>
+    </div>
+
+    <p style="font-size:0.82rem;color:#666;margin-bottom:16px;font-style:italic;">
+      Add new words to existing lists, create new lists, or remove words. Changes are saved to this browser automatically.
+    </p>
+
+    <!-- Section selector + new section -->
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:0.78rem;color:#888;display:block;margin-bottom:4px;">Select list to edit:</label>
+        <select id="editorSectionSelect" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:3px;font-size:0.85rem;font-family:'Libre Baskerville',serif;" onchange="loadEditorSection()">
+        </select>
+      </div>
+      <button class="btn btn-outline" onclick="showNewSectionForm()" style="white-space:nowrap;">+ New List</button>
+    </div>
+
+    <!-- New section form -->
+    <div id="newSectionForm" style="display:none;background:#f9f5ef;border:1.5px solid var(--border);border-radius:3px;padding:12px 14px;margin-bottom:16px;">
+      <p style="font-size:0.82rem;font-weight:bold;margin-bottom:8px;">Create New Vocabulary List</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="newSectionName" placeholder="List name (e.g. Transport)" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:3px;font-size:0.85rem;flex:1;min-width:180px;">
+        <button class="btn btn-primary" onclick="createNewSection()" style="padding:7px 14px;">Create</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('newSectionForm').style.display='none'">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Word table -->
+    <div id="editorWordTable" style="margin-bottom:16px;"></div>
+
+    <!-- Add word form -->
+    <div style="background:#f9f5ef;border:1.5px solid var(--border);border-radius:3px;padding:14px 16px;">
+      <p style="font-size:0.82rem;font-weight:bold;margin-bottom:10px;color:var(--gold);">➕ Add New Word</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;">
+        <div>
+          <label style="font-size:0.72rem;color:#888;display:block;margin-bottom:3px;">Japanese (kanji/kana)</label>
+          <input type="text" id="addJapanese" placeholder="e.g. 学校" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:3px;font-size:0.95rem;font-family:'Noto Serif JP',serif;" onkeydown="if(event.key==='Enter')document.getElementById('addReading').focus()">
+        </div>
+        <div>
+          <label style="font-size:0.72rem;color:#888;display:block;margin-bottom:3px;">Reading (hiragana)</label>
+          <input type="text" id="addReading" placeholder="e.g. がっこう" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:3px;font-size:0.95rem;font-family:'Noto Serif JP',serif;" onkeydown="if(event.key==='Enter')document.getElementById('addEnglish').focus()">
+        </div>
+        <div>
+          <label style="font-size:0.72rem;color:#888;display:block;margin-bottom:3px;">English meaning</label>
+          <input type="text" id="addEnglish" placeholder="e.g. school" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:3px;font-size:0.85rem;" onkeydown="if(event.key==='Enter')addWord()">
+        </div>
+        <button class="btn btn-primary" onclick="addWord()" style="padding:7px 14px;white-space:nowrap;">Add ✓</button>
+      </div>
+      <div id="addWordMsg" style="font-size:0.78rem;margin-top:8px;min-height:16px;color:var(--red);"></div>
+    </div>
+
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--cream);display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-primary" onclick="saveVocabChanges()">💾 Save All Changes</button>
+      <button class="btn btn-ghost" onclick="resetToOriginal()" style="color:#c0392b;border-color:#c0392b;">↺ Reset to Original</button>
+      <span id="saveMsg" style="font-size:0.78rem;color:#27ae60;font-style:italic;"></span>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /editorMain -->
+</div><!-- /editorPanel -->
+
+</body>
+</html>
